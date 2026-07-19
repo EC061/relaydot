@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: Relaydot API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /devices/{deviceId}/commands/claim:
+    post:
+      operationId: claimDeviceCommands
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        "200":
+          description: Durable commands available to this device
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Command"}
+  /channels/{channelId}/head:
+    get:
+      operationId: getChannelHead
+      parameters:
+        - name: channelId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        "200":
+          description: Current immutable revision head
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Revision"}
+components:
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, version]
+      properties:
+        status: {type: string, enum: [ok, degraded]}
+        version: {type: string}
+    Command:
+      type: object
+      additionalProperties: false
+      required: [id, type, idempotencyKey]
+      properties:
+        id: {type: string, format: uuid}
+        type: {type: string, enum: [sync, update_agent, reload_policy, collect_diagnostics]}
+        idempotencyKey: {type: string, minLength: 1, maxLength: 200}
+        payload: {type: object}
+    Revision:
+      type: object
+      additionalProperties: false
+      required: [id, channelId, manifestDigest, objectPath, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        channelId: {type: string, format: uuid}
+        baseRevisionId: {type: [string, "null"], format: uuid}
+        manifestDigest: {type: string, pattern: "^[a-f0-9]{64}$"}
+        objectPath: {type: string, minLength: 1}
+        createdAt: {type: string, format: date-time}

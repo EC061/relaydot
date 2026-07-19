@@ -1,0 +1,61 @@
+apiVersion: relaydot.dev/v1alpha1
+kind: CatalogSources
+metadata:
+  name: official-defaults
+
+# This file declares where the controller may check for model and price updates.
+# It never contains provider API keys. credentialRef values resolve through the
+# controller secret store and are optional: public documentation checks and local
+# model discovery still work without them.
+spec:
+  schedule:
+    enabled: true
+    cron: "0 4 * * *"
+    timezone: UTC
+  autoApply: false
+  retainRawFetches: true
+
+  providers:
+    openai:
+      modelApi:
+        enabled: true
+        optional: true
+        url: https://api.openai.com/v1/models
+        credentialRef: secrets/openai-api-key
+      modelDocuments:
+        - https://developers.openai.com/api/docs/models/all
+      pricingDocuments:
+        - https://developers.openai.com/api/docs/pricing
+
+    anthropic:
+      modelApi:
+        enabled: true
+        optional: true
+        url: https://api.anthropic.com/v1/models?limit=1000
+        credentialRef: secrets/anthropic-api-key
+      modelDocuments:
+        - https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions
+      pricingDocuments:
+        - https://platform.claude.com/docs/en/about-claude/pricing
+
+  fetch:
+    connectTimeoutSeconds: 10
+    totalTimeoutSeconds: 30
+    maxResponseBytes: 10485760
+    conditionalRequests: true
+    followRedirectsOnlyWithinAllowedHosts: true
+    allowedHosts:
+      - api.openai.com
+      - developers.openai.com
+      - api.anthropic.com
+      - platform.claude.com
+
+  validation:
+    requireHttps: true
+    requireSourceLocatorPerRate: true
+    requireNonnegativeRates: true
+    requireUniqueNormalizedKeys: true
+    blockOnEmptyPreviouslyNonemptySource: true
+    blockOnModelCountDropPercent: 25
+    blockOnRateChangePercent: 50
+    unknownEffectiveDate: require-review

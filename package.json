@@ -1,0 +1,11 @@
+{
+  "name": "relaydot",
+  "private": true,
+  "packageManager": "pnpm@10.13.1",
+  "scripts": {
+    "test:agent": "cd agent && uv run pytest --cov=relaydot --cov-report=term-missing",
+    "lint:agent": "cd agent && uv run ruff check .",
+    "typecheck:agent": "cd agent && uv run mypy src",
+    "check": "pnpm test:agent && pnpm lint:agent && pnpm typecheck:agent"
+  }
+}
