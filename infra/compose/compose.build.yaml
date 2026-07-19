@@ -1,0 +1,5 @@
+services:
+  controller:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile

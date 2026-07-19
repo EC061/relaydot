@@ -1,18 +1,18 @@
+name: relaydot
+
 services:
   controller:
     image: ${RELAYDOT_IMAGE:-ghcr.io/ec061/relaydot-controller:latest}
-    build:
-      context: ../..
-      dockerfile: apps/web/Dockerfile
     environment:
       RELAYDOT_ADMIN_TOKEN: ${RELAYDOT_ADMIN_TOKEN:?set RELAYDOT_ADMIN_TOKEN}
       RELAYDOT_DATABASE_PATH: /app/data/relaydot.db
-      RELAYDOT_HOST: 0.0.0.0
-      RELAYDOT_PORT: 3000
     ports:
-      - "${RELAYDOT_BIND_ADDRESS:-0.0.0.0}:${RELAYDOT_PORT:-3000}:3000"
+      - "${RELAYDOT_BIND_ADDRESS:-127.0.0.1}:${RELAYDOT_PORT:-3000}:3000"
     init: true
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
     healthcheck:
       test:
         [
@@ -30,3 +30,4 @@ services:
 
 volumes:
   controller-data:
+    name: relaydot-controller-data

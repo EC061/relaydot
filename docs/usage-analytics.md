@@ -1,5 +1,9 @@
 # Usage analytics and cost accounting
 
+Status: design specification. The agent contains tested usage-normalization
+primitives, but controller ingestion, rollups, and dashboard reporting described
+below are not yet implemented.
+
 ## Product promise
 
 Relaydot shows usage from synchronized Claude and Codex conversations without

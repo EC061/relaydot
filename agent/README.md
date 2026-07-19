@@ -18,8 +18,10 @@ relaydot service install --start
 relaydot doctor
 ```
 
-Enrollment, authenticated heartbeat, durable command polling/acknowledgement, and
+Enrollment, authenticated heartbeat, durable command polling/acknowledgement,
 foreground service operation, and per-user launchd/systemd/Scheduled Task
-installation are implemented. Remote package updates and complete cross-device
-revision transfer remain planned. See the repository README and implementation
-plan for the full product scope.
+installation are implemented. For a persistent managed node, prefer
+`relaydot service install --start`; `service run` is the foreground diagnostic
+mode. Remote package updates and complete cross-device revision transfer remain
+planned. See the repository README and implementation plan for the full product
+scope.

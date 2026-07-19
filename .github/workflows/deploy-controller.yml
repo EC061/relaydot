@@ -1,0 +1,74 @@
+name: Deploy controller
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Optional GHCR tag or sha256 digest; defaults to this commit's sha tag
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relaydot-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" >"$HOME/.ssh/relaydot"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" >"$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/relaydot" "$HOME/.ssh/known_hosts"
+      - name: Install deployment files and deploy
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+          REQUESTED_IMAGE: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+          path="${DEPLOY_PATH:-/opt/relaydot}"
+          port="${DEPLOY_PORT:-22}"
+          image="${REQUESTED_IMAGE:-ghcr.io/ec061/relaydot-controller:sha-${GITHUB_SHA::7}}"
+
+          [[ "$DEPLOY_HOST" =~ ^[A-Za-z0-9._:-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "$port" =~ ^[0-9]+$ ]]
+          [[ "$path" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          [[ "$image" =~ ^ghcr\.io/ec061/relaydot-controller(:[A-Za-z0-9._-]+|@sha256:[a-f0-9]{64})$ ]]
+
+          ssh_options=(
+            -i "$HOME/.ssh/relaydot"
+            -p "$port"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+          )
+          target="${DEPLOY_USER}@${DEPLOY_HOST}"
+
+          ssh "${ssh_options[@]}" "$target" \
+            "install -d -m 700 '$path' '$path/scripts'"
+          scp -i "$HOME/.ssh/relaydot" -P "$port" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            infra/compose/compose.yaml "$target:$path/compose.yaml"
+          scp -i "$HOME/.ssh/relaydot" -P "$port" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            infra/scripts/*.sh "$target:$path/scripts/"
+          ssh "${ssh_options[@]}" "$target" \
+            "chmod 700 '$path/scripts/'*.sh && RELAYDOT_DEPLOY_DIR='$path' '$path/scripts/deploy-controller.sh' '$image'"

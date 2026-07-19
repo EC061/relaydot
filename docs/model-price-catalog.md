@@ -1,5 +1,9 @@
 # Model and price catalog refresh
 
+Status: design specification. The current controller does not yet implement this
+page, refresh API, scheduler, or catalog tables. These requirements are retained
+here for the corresponding implementation milestone.
+
 ## Product behavior
 
 The console has a **Settings -> Models & pricing** page with these actions:

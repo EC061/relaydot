@@ -21,6 +21,20 @@ jobs:
           cache: pnpm
       - name: Install locked workspace
         run: pnpm install --frozen-lockfile
+      - name: Documentation and deployment file checks
+        run: pnpm check:docs
+      - name: OpenAPI contract
+        run: pnpm lint:contracts
+      - name: Deployment script checks
+        run: pnpm check:deployment
+      - name: Production Compose configuration
+        env:
+          RELAYDOT_ADMIN_TOKEN: ci-validation-token
+        run: docker compose -f infra/compose/compose.yaml config --quiet
+      - name: Local-build Compose overlay
+        env:
+          RELAYDOT_ADMIN_TOKEN: ci-validation-token
+        run: docker compose -f infra/compose/compose.yaml -f infra/compose/compose.build.yaml config --quiet
       - name: Type check
         run: pnpm lint:controller
       - name: Tests and coverage

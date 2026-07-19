@@ -1,5 +1,9 @@
 # Implementation plan
 
+Status: roadmap. Completed items are represented in the repository and summarized
+in the root README; an item appearing below is not by itself a claim that the
+feature is already implemented.
+
 The plan is milestone-based. Each milestone ends in an executable acceptance test,
 not only completed source files.
 

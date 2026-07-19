@@ -1,5 +1,11 @@
 # Architecture
 
+Status: this is the target architecture. The repository currently implements the
+single-container SQLite/Honker controller, enrollment/device command protocol,
+initial dashboard, and agent local-safety/service primitives. Sections describing
+encrypted revisions, usage ingestion, catalog refresh, conflicts, and rollout
+management remain design requirements until their milestones are complete.
+
 ## System boundary
 
 ```text

@@ -4,11 +4,17 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "build:controller": "pnpm --filter @relaydot/controller build",
+    "check:deployment": "bash -n infra/scripts/*.sh infra/tests/*.sh && bash infra/tests/deployment-scripts.sh",
+    "check:docs": "node tools/check-docs.mjs",
     "test:controller": "pnpm --filter @relaydot/controller test",
+    "lint:contracts": "redocly lint contracts/openapi.yaml",
     "lint:controller": "pnpm --filter @relaydot/controller lint",
     "test:agent": "cd agent && uv run pytest --cov=relaydot --cov-report=term-missing",
     "lint:agent": "cd agent && uv run ruff check .",
     "typecheck:agent": "cd agent && uv run mypy src",
-    "check": "pnpm lint:controller && pnpm test:controller && pnpm build:controller && pnpm test:agent && pnpm lint:agent && pnpm typecheck:agent"
+    "check": "pnpm check:docs && pnpm check:deployment && pnpm lint:contracts && pnpm lint:controller && pnpm test:controller && pnpm build:controller && pnpm test:agent && pnpm lint:agent && pnpm typecheck:agent"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.39.0"
   }
 }

@@ -35,7 +35,7 @@ The suite uses branch coverage and includes property tests for portable paths,
 append classification, and token arithmetic. CI enforces a minimum of 90%; the
 current suite exercises more than 95% of statements.
 
-## Product shape
+## Target product shape
 
 - One Next.js controller containing the administration UI and agent API.
 - better-sqlite3 in WAL mode at `/app/data/relaydot.db`.
@@ -55,7 +55,7 @@ SQLite/Honker is the durable command bus. A WebSocket-only broadcast would lose
 commands for sleeping laptops, while durable command rows can be claimed,
 acknowledged, retried, audited, and processed when a node returns.
 
-## Planned operator experience
+## Operator experience
 
 After the package is published:
 
@@ -82,13 +82,14 @@ relaydot service install|start|stop|status|uninstall
 relaydot doctor
 ```
 
-The controller can set a desired agent version for one device, a rollout ring,
-or the entire fleet. Agents upgrade with `uv tool upgrade relaydot` (or install a
-pinned version), restart through the local service manager, and report health.
+Remote version selection and rollout rings are target behavior, not part of the
+current `0.1.x` slice. The planned agent upgrade mechanism uses
+`uv tool upgrade relaydot` or an explicitly pinned version.
 
 ## Documents
 
 - [Self-hosting status and current Compose path](docs/self-hosting.md)
+- [Controller image and production deployment workflow](docs/deployment-workflow.md)
 - [Agent release and uv publishing guide](docs/releasing.md)
 - [Research and decisions](docs/research.md)
 - [Architecture](docs/architecture.md)

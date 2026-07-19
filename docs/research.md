@@ -1,5 +1,8 @@
 # Research and decisions
 
+Status: decision record and supporting research, not an implementation-status
+document. Current shipped behavior is summarized in the root README.
+
 Research date: 2026-07-16.
 
 ## What the protocols and tools imply

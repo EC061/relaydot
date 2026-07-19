@@ -1,5 +1,9 @@
 # Replacing the Syncthing implementation
 
+Status: future migration runbook. Do not execute this workflow against production
+data until observe-only mode, encrypted revision transfer, import workspaces, and
+the referenced validation screens are implemented and release-tested.
+
 Relaydot and Syncthing must not concurrently write the same managed paths during
 normal operation. The migration uses a controlled import window and preserves a
 rollback copy until all machines agree on the published baseline.
