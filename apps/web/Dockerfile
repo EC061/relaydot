@@ -3,7 +3,11 @@ FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN corepack enable && corepack prepare pnpm@10.13.1 --activate
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes libsqlite3-0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable \
+    && corepack prepare pnpm@10.13.1 --activate
 
 FROM base AS dependencies
 
@@ -23,7 +27,7 @@ COPY . .
 
 RUN pnpm --filter @relaydot/controller build
 
-FROM node:24-bookworm-slim AS runner
+FROM base AS runner
 
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
