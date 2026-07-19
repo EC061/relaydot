@@ -50,3 +50,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: mode=max
+      - if: github.event_name != 'pull_request'
+        name: Smoke-test the published controller
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          set -euo pipefail
+          tag="sha-${GITHUB_SHA::7}"
+          docker pull "${IMAGE_NAME}:${tag}"
+          docker run --detach --rm \
+            --name relaydot-controller-smoke \
+            --publish 127.0.0.1:3000:3000 \
+            --env RELAYDOT_ADMIN_TOKEN=ci-smoke-token \
+            "${IMAGE_NAME}:${tag}"
+          trap 'docker logs relaydot-controller-smoke; docker stop relaydot-controller-smoke' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/api/v1/health \
+              | grep --quiet '"journal_mode":"wal"'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
