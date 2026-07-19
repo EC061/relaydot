@@ -1,0 +1,46 @@
+name: Publish agent to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install Python 3.11
+        run: uv python install 3.11
+      - name: Sync locked environment
+        run: uv sync --all-groups --locked --python 3.11
+      - name: Require tag and package versions to match
+        run: test "${GITHUB_REF_NAME#v}" = "$(uv version --short)"
+      - name: Lint and format check
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Type check
+        run: uv run mypy src
+      - name: Tests and branch coverage
+        run: uv run pytest --cov=relaydot --cov-report=term-missing
+      - name: Build release distributions
+        run: uv build --no-sources
+      - name: Smoke test wheel
+        run: uv run --isolated --no-project --with dist/*.whl python tests/smoke_package.py
+      - name: Smoke test source distribution
+        run: uv run --isolated --no-project --with dist/*.tar.gz python tests/smoke_package.py
+      - name: Publish with PyPI Trusted Publishing
+        run: uv publish

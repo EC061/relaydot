@@ -13,9 +13,9 @@ but it is an extension and cannot be assumed to exist on every WebDAV provider.
 
 Decision: use the smallest portable WebDAV surface (`OPTIONS`, `MKCOL`, `PUT`,
 `GET`, `HEAD`, `DELETE`, and shallow `PROPFIND`) and run a capability probe during
-setup. Store immutable revision objects and do not depend on WebDAV locks or RFC
-6578. PostgreSQL serializes publication of the logical head; ETags add a second
-guard where the provider implements them correctly.
+setup when an external object adapter is enabled. The default single-container
+deployment stores immutable encrypted objects under `/app/data/objects`; SQLite
+serializes publication of logical heads in the same persistent volume.
 
 Sources:
 
@@ -42,24 +42,23 @@ Sources:
 
 ### Web framework and UI
 
-Next.js App Router supports server and client components, streaming/Suspense, and
-TypeScript route conventions. shadcn/ui officially supports Next.js and places the
-component source in the application, which is a good fit for a heavily customized
-fleet dashboard. NestJS provides a structured TypeScript backend, OpenAPI-friendly
-controllers, authentication guards, server-sent events, WebSocket gateways, and a
-path to BullMQ if the deployment later needs Redis-backed jobs.
+Next.js App Router supports server/client components and Node route handlers in
+one deployable process. `better-sqlite3` provides synchronous transactions and
+explicit WAL mode. Honker provides durable queue claims and commit notifications
+using tables in the same SQLite file.
 
-Decision: use Next.js for the console and NestJS for the control/agent API. Do not
-put the endpoint protocol in ad-hoc Next.js route handlers. This keeps long-running
-sync orchestration and the versioned agent API separate from UI deployment details.
+Decision: use one Next.js controller for the console and versioned agent API.
+Use better-sqlite3 with `journal_mode=WAL`, foreign keys, normal synchronous mode,
+and a busy timeout. Insert Honker jobs through the same better-sqlite3 transaction,
+then consume them inside the Next.js process. Do not deploy a broker or worker
+container.
 
 Sources:
 
 - https://nextjs.org/docs/app
 - https://ui.shadcn.com/docs/installation/next
-- https://docs.nestjs.com/websockets/gateways
-- https://docs.nestjs.com/techniques/server-sent-events
-- https://docs.nestjs.com/techniques/queues
+- https://github.com/WiseLibs/better-sqlite3
+- https://honker.dev/
 
 ## Configuration scope findings
 
@@ -114,7 +113,7 @@ Source:
 | Web controller + outbound endpoint agent | Central policy, offline command delivery, audit, no inbound device ports | Requires hosting a controller | Selected |
 | Agents talk directly to WebDAV | Small server footprint | WebDAV credentials on every device; no durable remote control or fleet inventory | Rejected |
 | Syncthing plus a dashboard | Mature file replication | Hard to enforce safe semantic allowlists, update agents, or provide application-aware conflicts | Rejected |
-| Git repository as the source of truth | Excellent history and review | Awkward for frequently changing personal state and credentials; user requires WebDAV | Optional export only |
+| Git repository as the source of truth | Excellent history and review | Awkward for frequently changing personal state and credentials | Optional export only |
 | Peer-to-peer mesh | No central server | NAT, offline peers, revocation, and audit complexity | Rejected |
 | Always-on WebSockets for control | Low latency | Sleeping/offline devices miss ephemeral broadcasts | Optional wake hint only |
 
@@ -201,9 +200,9 @@ Sources:
 1. Recovery and new-device approval for end-to-end encryption. The first trusted
    device creates the fleet content key; subsequent devices need approval from an
    existing device or the offline recovery key.
-2. Supported WebDAV providers for the first compatibility matrix. At minimum test
-   Nextcloud, Apache `mod_dav`, and `rclone serve webdav`, plus the user's actual
-   provider before declaring v1 stable.
+2. Whether an external WebDAV object adapter belongs after v1. The default
+   deployment keeps encrypted objects on the controller's `/app/data` volume, so
+   WebDAV compatibility is not a release requirement.
 3. Initial platform support. macOS and Linux user services are straightforward;
    Windows should use a per-user Scheduled Task first and graduate to a signed
    native service wrapper only if background reliability requires it.

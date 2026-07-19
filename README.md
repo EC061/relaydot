@@ -2,15 +2,21 @@
 
 Relaydot is a self-hosted control plane and endpoint agent for synchronizing a
 curated subset of AI coding-tool configuration across macOS, Linux, and Windows.
-The durable payload store is WebDAV; device inventory, commands, rollouts, and
-audit records live in the controller database.
+The controller is a single Next.js container backed by better-sqlite3 in WAL mode.
+Honker provides durable in-process jobs in the same SQLite file, without a
+separate worker or broker.
 
-The repository now contains the first executable agent-core slice. Policy and
-path safety, deterministic inventories/manifests, traversal-safe bundles, atomic
-apply with rollback, semantic/text merging, append-stream handling, usage
-normalization, and exact cost arithmetic live under `agent/`. The controller and
-web applications remain contract placeholders while the security and protocol
-decisions are reviewed.
+The repository contains an executable controller and endpoint-agent slice.
+Policy/path safety, deterministic manifests, traversal-safe bundles, atomic apply
+with rollback, merging, append streams, and usage arithmetic live under `agent/`.
+The controller implements one-time enrollment, device authentication, heartbeat,
+durable command creation/claim/acknowledgement, audit events, SQLite migrations,
+an embedded Honker consumer, and the initial administration dashboard.
+
+**Current readiness:** the controller and agent protocol run end-to-end and the
+agent package builds cleanly. Encrypted cross-device revision transfer, controller
+authentication for the browser UI, remote package updates, and the remaining
+fleet-management screens are still in progress.
 
 ## Development checks
 
@@ -27,14 +33,16 @@ uv run pytest --cov=relaydot --cov-report=term-missing
 
 The suite uses branch coverage and includes property tests for portable paths,
 append classification, and token arithmetic. CI enforces a minimum of 90%; the
-current suite exercises more than 98% of statements and branches combined.
+current suite exercises more than 95% of statements.
 
-## Recommended product shape
+## Product shape
 
-- A Next.js + shadcn/ui administration console.
-- A NestJS TypeScript API/control plane backed by PostgreSQL.
+- One Next.js controller containing the administration UI and agent API.
+- better-sqlite3 in WAL mode at `/app/data/relaydot.db`.
+- Honker durable jobs consumed inside the controller process.
 - A Python endpoint agent distributed as a PyPI CLI and installed with `uv`.
-- Encrypted, immutable revision bundles stored in any compatible WebDAV server.
+- One persistent `/app/data` volume for the controller database and encrypted
+  revision objects.
 - Outbound-only agent traffic with durable command polling, so offline machines
   receive sync and update commands when they return.
 - Full-fidelity Claude project conversations and Codex session equivalents,
@@ -43,9 +51,9 @@ current suite exercises more than 98% of statements and branches combined.
 - A reviewed model/price catalog with a web **Check for updates** action, scheduled
   official-source checks, semantic diffs, and immutable approved versions.
 
-WebDAV is storage, not the command bus. This is the central architectural
-decision: a WebSocket-only broadcast would lose commands for sleeping laptops,
-while a durable command row can be acknowledged, retried, audited, and expired.
+SQLite/Honker is the durable command bus. A WebSocket-only broadcast would lose
+commands for sleeping laptops, while durable command rows can be claimed,
+acknowledged, retried, audited, and processed when a node returns.
 
 ## Planned operator experience
 
@@ -57,9 +65,12 @@ relaydot enroll --server https://relaydot.example.com --token <one-time-token>
 relaydot service install --start
 ```
 
-The web console will generate a single copy/paste enrollment line which installs
-`uv` when necessary, installs Relaydot, consumes a short-lived one-time token,
-and starts the per-user service.
+The current agent supports foreground operation and installs a launchd user
+agent, systemd user service, or Windows Scheduled Task with:
+
+```sh
+relaydot service install --start
+```
 
 The stable CLI contract is planned as:
 
@@ -77,6 +88,8 @@ pinned version), restart through the local service manager, and report health.
 
 ## Documents
 
+- [Self-hosting status and current Compose path](docs/self-hosting.md)
+- [Agent release and uv publishing guide](docs/releasing.md)
 - [Research and decisions](docs/research.md)
 - [Architecture](docs/architecture.md)
 - [Implementation plan](docs/implementation-plan.md)
@@ -92,10 +105,10 @@ The current policy is a full encrypted mirror of `~/.claude`, `~/.claude.json`,
 `~/.codex`, and optional `~/.agents`: conversations, settings, plugins,
 credentials, caches, databases, attachments, and other regular files are retained
 on every trusted machine. Deletions are archived and restored rather than
-propagated, and WebDAV garbage collection is disabled. This intentionally favors
+propagated, and object garbage collection is disabled. This intentionally favors
 preservation over storage efficiency and can be narrowed later. Conversation
-payloads are encrypted on the endpoint before WebDAV upload; the controller
-receives normalized usage counters without receiving prompt text.
+payloads will be encrypted on the endpoint before controller object upload; the
+controller receives normalized usage counters without receiving prompt text.
 
 Costs shown in the console are explicitly labeled **official API-equivalent
 estimates**. They use versioned official API list prices and are not a claim about

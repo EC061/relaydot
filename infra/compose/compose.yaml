@@ -1,21 +1,32 @@
 services:
-  postgres:
-    image: postgres:17-alpine
+  controller:
+    image: ${RELAYDOT_IMAGE:-ghcr.io/ec061/relaydot-controller:latest}
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
     environment:
-      POSTGRES_DB: relaydot
-      POSTGRES_USER: relaydot
-      POSTGRES_PASSWORD: relaydot-development-only
+      RELAYDOT_ADMIN_TOKEN: ${RELAYDOT_ADMIN_TOKEN:?set RELAYDOT_ADMIN_TOKEN}
+      RELAYDOT_DATABASE_PATH: /app/data/relaydot.db
+      RELAYDOT_HOST: 0.0.0.0
+      RELAYDOT_PORT: 3000
+    ports:
+      - "${RELAYDOT_BIND_ADDRESS:-0.0.0.0}:${RELAYDOT_PORT:-3000}:3000"
+    init: true
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U relaydot"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-  webdav:
-    image: hacdias/webdav:v5.8.0
-    volumes:
-      - webdav-data:/data
+      - controller-data:/app/data
+
 volumes:
-  postgres-data:
-  webdav-data:
+  controller-data:

@@ -3,9 +3,12 @@
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "scripts": {
+    "build:controller": "pnpm --filter @relaydot/controller build",
+    "test:controller": "pnpm --filter @relaydot/controller test",
+    "lint:controller": "pnpm --filter @relaydot/controller lint",
     "test:agent": "cd agent && uv run pytest --cov=relaydot --cov-report=term-missing",
     "lint:agent": "cd agent && uv run ruff check .",
     "typecheck:agent": "cd agent && uv run mypy src",
-    "check": "pnpm test:agent && pnpm lint:agent && pnpm typecheck:agent"
+    "check": "pnpm lint:controller && pnpm test:controller && pnpm build:controller && pnpm test:agent && pnpm lint:agent && pnpm typecheck:agent"
   }
 }

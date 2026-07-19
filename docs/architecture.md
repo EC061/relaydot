@@ -5,17 +5,15 @@
 ```text
 Browser
   |
-  | HTTPS (admin session, SSE updates)
+  | HTTPS
   v
-Next.js web console
+Next.js controller  <---- HTTPS long-poll ----  Relaydot agents
   |
-  | internal authenticated API
-  v
-NestJS control plane  <---- HTTPS long-poll ----  Relaydot agents
-  |        |
-  |        +---- PostgreSQL (devices, commands, usage facts, prices, audit)
+  +---- better-sqlite3 WAL database
+  |       +---- device, command, usage, price, and audit tables
+  |       +---- Honker durable queue/stream tables
   |
-  +------------- WebDAV (E2EE revisions and conversation-log segments)
+  +---- /app/data encrypted revision objects
 ```
 
 Agents only make outbound HTTPS connections. They do not accept remote shell
@@ -23,44 +21,39 @@ commands, do not expose listening ports, and do not execute arbitrary controller
 payloads. The remote command vocabulary is a closed, versioned enum such as
 `sync`, `update_agent`, `reload_policy`, and `collect_diagnostics`.
 
-## Planned repository layout
+## Repository layout
 
 ```text
 relaydot/
   apps/
-    web/                  # Next.js App Router + shadcn/ui
-    api/                  # NestJS control plane
+    web/                  # single Next.js controller, UI, and agent API
   packages/
     contracts/            # OpenAPI-generated TypeScript client and schemas
-    database/             # migrations and query layer
     sync-format/          # manifest schema and test vectors
   agent/                  # Python package installed by uv
   infra/
-    compose/              # controller, PostgreSQL, reverse proxy, test WebDAV
+    compose/              # one controller container and persistent data volume
   policies/               # reviewed default policy presets
   docs/
 ```
 
 Use a pnpm workspace for TypeScript packages and a separate uv-managed Python
-project for the agent. The OpenAPI document is the contract boundary; generate a
-typed web client and Python models from it in CI to detect drift.
+project for the agent. The versioned `/api/v1` HTTP surface is the contract
+boundary between the Next.js route handlers and Python agent.
 
 ## Control plane
 
 ### Services
 
-- `web`: Next.js App Router, React, Tailwind CSS, shadcn/ui, TanStack Query/Table,
-  React Hook Form, Zod, Recharts, and Monaco only for the policy editor.
-- `api`: NestJS REST API with `/api/v1` versioning, OpenAPI, structured logging,
-  rate limits, admin auth, device enrollment, command delivery, and SSE events.
-- `db`: PostgreSQL as the system of record.
-- `webdav`: external in production. A disposable server exists only for local
-  development and protocol compatibility tests.
+- `controller`: Next.js App Router UI and Node route handlers with `/api/v1`
+  versioning, admin/device authentication, enrollment, and command delivery.
+- `db`: better-sqlite3 in WAL mode as the system of record.
+- `jobs`: Honker tables in the same SQLite file, consumed in the controller.
+- `objects`: encrypted immutable files under `/app/data/objects`.
 - `proxy`: Caddy or an existing reverse proxy terminates TLS.
 
-Redis/BullMQ is deliberately absent from the first release. Device commands are
-small and naturally modeled as durable PostgreSQL rows. Add BullMQ only after
-measurements show that background WebDAV work or multi-replica fan-out needs it.
+Redis, BullMQ, and a separate worker are deliberately absent. Device commands and
+background work live in SQLite/Honker and commit alongside controller state.
 
 ### Core data model
 
@@ -97,7 +90,7 @@ measurements show that background WebDAV work or multi-replica fan-out needs it.
 ### Web console surfaces
 
 1. Fleet overview: online/offline/stale devices, sync health, current agent
-   versions, conflicts, WebDAV status, and recent activity.
+   versions, conflicts, object-storage status, and recent activity.
 2. Device inventory: filters, labels, last check-in, platform, policy revision,
    current/desired version, diagnostics, revoke, single-device sync/update, and
    editable display name/tags. Renaming does not change the OS hostname.
@@ -114,7 +107,7 @@ measurements show that background WebDAV work or multi-replica fan-out needs it.
    machine, provider, model, project, session, and service tier.
 8. Parser health: per-provider accepted/duplicate/unknown record counts, cursor
    resets, last successful parse, replay action, and price-match coverage.
-9. Storage/settings: WebDAV capability probe, credentials, quota/latency health,
+9. Storage/settings: object integrity, quota/latency health,
    encryption key status, retention, backup, and audit export.
 10. Models & pricing: check official sources now, inspect source freshness and
     coverage, review a semantic candidate diff, apply an immutable catalog version,
@@ -144,7 +137,7 @@ credential store when available. Local config must use owner-only permissions.
 
 `relaydot config init` creates a commented config and validates discovered paths.
 `config set` changes one typed key, `config edit` opens the file, and `config
-validate` checks policy, path portability, WebDAV/controller reachability, secret
+validate` checks policy, path portability, controller reachability, secret
 patterns, symlink escapes, and file size limits. The web console can publish a
 policy version, but machine-specific path overrides remain local.
 
@@ -177,7 +170,7 @@ unreliable.
 5. Compare with the local base. If unchanged, stop.
 6. Create and end-to-end encrypt a compressed revision bundle, then upload it with
    `base_revision_id` and an idempotency key.
-7. The controller validates ciphertext metadata, stores the immutable WebDAV
+7. The controller validates ciphertext metadata, stores the immutable local
    object, and in a database transaction advances the channel head only if the
    base is current.
 8. If the base is stale, start the merge/conflict path instead of overwriting.
@@ -201,7 +194,7 @@ unreliable.
 2. When a file grows, parse complete new JSONL records, classify the bytes as local
    or remote-applied, and emit usage facts only for genuinely local records.
 3. Preserve original bytes in ordered, content-addressed segments. Encrypt each
-   segment on the endpoint before upload; prompt text never reaches PostgreSQL.
+   segment on the endpoint before upload; prompt text never reaches SQLite.
 4. The controller deduplicates segments and usage facts with separate idempotency
    keys and records the origin device for each newly observed local event.
 5. A receiving agent reconstructs the exact provider file in a staging area and
@@ -236,10 +229,10 @@ high-trust endpoint, and E2EE is mandatory for every dataset.
 The default conflict policy is `preserve_both_and_pause_path`, not last writer
 wins. Other unrelated paths continue synchronizing.
 
-## WebDAV object layout
+## Encrypted object layout
 
 ```text
-/relaydot/v1/fleets/<fleet-id>/
+/app/data/objects/v1/fleets/<fleet-id>/
   revisions/<revision-id>.bundle.enc
   manifests/<revision-id>.manifest.enc
   conversations/<provider>/<stream-id>/<epoch>/<segment-id>.jsonl.enc
@@ -248,7 +241,7 @@ wins. Other unrelated paths continue synchronizing.
 ```
 
 Objects are immutable and addressed by revision ID. Logical heads and commands are
-kept in PostgreSQL, not mutable WebDAV files. Under the current preservation mode,
+kept in SQLite, not mutable object files. Under the current preservation mode,
 tombstones and old objects are retained forever and garbage collection is disabled.
 
 ## Security model
@@ -257,13 +250,13 @@ tombstones and old objects are retained forever and garbage collection is disabl
 - Enrollment tokens are random, hashed at rest, single use, scoped, and short lived.
 - Each device creates a keypair. Controller-issued access tokens are bound to the
   device, rotated, and immediately revocable.
-- WebDAV credentials exist only on the controller and use the narrowest possible
-  collection/account.
+- The object directory is writable only by the controller container user and is
+  backed up consistently with SQLite.
 - The first trusted device generates the fleet content key. The controller stores
   only per-device encrypted key envelopes. A new device needs approval from an
   existing trusted device or the offline recovery key before it can decrypt.
 - Revision bundles, conversation segments, and attachments use authenticated
-  encryption on the endpoint before WebDAV upload. The controller cannot decrypt
+  encryption on the endpoint before object upload. The controller cannot decrypt
   conversation content.
 - Auth files, credentials, operational logs, caches, SQLite state, plugins,
   settings, conversation histories, sessions, and attachments are all included
@@ -326,7 +319,7 @@ rate cards. The controller combines those optional authenticated inventories wit
 locally observed model IDs and deterministic parsing of allowlisted official model
 and pricing documentation.
 
-A manual UI check or daily schedule creates a durable PostgreSQL refresh job. It
+A manual UI check or daily schedule creates a durable Honker refresh job. It
 archives response metadata and hashes, parses with versioned provider adapters,
 validates exact decimal rates and completeness, and stages a candidate. Automatic
 application is off by default. An administrator reviews source-linked additions,

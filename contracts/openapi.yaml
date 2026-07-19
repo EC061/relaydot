@@ -1,76 +1,286 @@
 openapi: 3.1.0
 info:
-  title: Relaydot API
+  title: Relaydot Controller API
   version: 1.0.0
+  license:
+    name: Unlicensed
 servers:
   - url: /api/v1
 paths:
   /health:
     get:
+      summary: Check controller health
       operationId: getHealth
+      security: []
       responses:
         "200":
-          description: Service health
+          description: Controller, SQLite, and Honker health
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Health"}
+        "503":
+          description: Controller storage is unavailable
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /admin/enrollment-tokens:
+    post:
+      summary: Create a single-use enrollment token
+      operationId: createEnrollmentToken
+      security: [{adminToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                expires_in: {type: integer, minimum: 60, maximum: 86400, default: 600}
+      responses:
+        "200":
+          description: Single-use enrollment token
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/EnrollmentToken"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /enroll:
+    post:
+      summary: Enroll a managed node
+      operationId: enrollDevice
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/EnrollRequest"}
+      responses:
+        "201":
+          description: Bound device credential
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/EnrollResponse"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /admin/devices:
+    get:
+      summary: List enrolled devices
+      operationId: listDevices
+      security: [{adminToken: []}]
+      responses:
+        "200":
+          description: Enrolled devices
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Health"
-  /devices/{deviceId}/commands/claim:
+                type: array
+                items: {$ref: "#/components/schemas/Device"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /admin/devices/{deviceId}/commands:
     post:
-      operationId: claimDeviceCommands
+      summary: Queue a durable device command
+      operationId: createDeviceCommand
+      security: [{adminToken: []}]
       parameters:
-        - name: deviceId
-          in: path
-          required: true
-          schema: {type: string, format: uuid}
+        - $ref: "#/components/parameters/DeviceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CommandRequest"}
       responses:
         "200":
-          description: Durable commands available to this device
+          description: Newly created or idempotently reused command
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Command"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+  /devices/{deviceId}/heartbeat:
+    post:
+      summary: Record a device heartbeat
+      operationId: heartbeatDevice
+      security: [{deviceBearer: []}]
+      parameters:
+        - $ref: "#/components/parameters/DeviceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [agent_version]
+              properties:
+                agent_version: {type: string, minLength: 1, maxLength: 50}
+      responses:
+        "200":
+          description: Accepted heartbeat
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [server_time]
+                properties:
+                  server_time: {type: integer}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /devices/{deviceId}/commands/claim:
+    post:
+      summary: Claim durable device commands
+      operationId: claimDeviceCommands
+      security: [{deviceBearer: []}]
+      parameters:
+        - $ref: "#/components/parameters/DeviceId"
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 10}
+      responses:
+        "200":
+          description: Atomically claimed durable commands
           content:
             application/json:
               schema:
                 type: array
                 items: {$ref: "#/components/schemas/Command"}
-  /channels/{channelId}/head:
-    get:
-      operationId: getChannelHead
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /devices/{deviceId}/commands/{commandId}/ack:
+    post:
+      summary: Acknowledge a device command
+      operationId: acknowledgeDeviceCommand
+      security: [{deviceBearer: []}]
       parameters:
-        - name: channelId
+        - $ref: "#/components/parameters/DeviceId"
+        - name: commandId
           in: path
           required: true
           schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CommandAck"}
       responses:
         "200":
-          description: Current immutable revision head
+          description: Terminal command state
           content:
             application/json:
-              schema: {$ref: "#/components/schemas/Revision"}
+              schema: {$ref: "#/components/schemas/Command"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
 components:
+  securitySchemes:
+    adminToken:
+      type: apiKey
+      in: header
+      name: x-relaydot-admin-token
+    deviceBearer:
+      type: http
+      scheme: bearer
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  responses:
+    Unauthorized:
+      description: Missing or invalid credential
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error: {type: string}
     Health:
       type: object
       additionalProperties: false
-      required: [status, version]
+      required: [status, version, database, journal_mode, pending_jobs]
       properties:
-        status: {type: string, enum: [ok, degraded]}
+        status: {type: string, const: ok}
         version: {type: string}
+        database: {type: string, const: ok}
+        journal_mode: {type: string, const: wal}
+        pending_jobs: {type: integer, minimum: 0}
+    EnrollmentToken:
+      type: object
+      additionalProperties: false
+      required: [id, token, expires_at]
+      properties:
+        id: {type: string, format: uuid}
+        token: {type: string, minLength: 1}
+        expires_at: {type: integer}
+    EnrollRequest:
+      type: object
+      additionalProperties: false
+      required: [token, name, platform, agent_version]
+      properties:
+        token: {type: string, minLength: 1}
+        name: {type: string, minLength: 1, maxLength: 200}
+        platform: {type: string, minLength: 1, maxLength: 50}
+        agent_version: {type: string, minLength: 1, maxLength: 50}
+        public_key: {type: [string, "null"]}
+    EnrollResponse:
+      type: object
+      additionalProperties: false
+      required: [device_id, device_token]
+      properties:
+        device_id: {type: string, format: uuid}
+        device_token: {type: string, minLength: 1}
+    Device:
+      type: object
+      additionalProperties: false
+      required: [id, name, platform, agent_version, enrolled_at, last_seen_at]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        platform: {type: string}
+        agent_version: {type: string}
+        enrolled_at: {type: integer}
+        last_seen_at: {type: integer}
+        revoked_at: {type: [integer, "null"]}
+    CommandRequest:
+      type: object
+      additionalProperties: false
+      required: [type, idempotency_key]
+      properties:
+        type:
+          type: string
+          enum: [sync, update_agent, reload_policy, collect_diagnostics]
+        idempotency_key: {type: string, minLength: 1, maxLength: 200}
+        payload: {type: object}
+    CommandAck:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: {type: string, enum: [succeeded, failed]}
+        result: {type: [object, "null"]}
+        error: {type: [string, "null"]}
     Command:
       type: object
       additionalProperties: false
-      required: [id, type, idempotencyKey]
+      required:
+        [id, device_id, type, payload, idempotency_key, status, created_at]
       properties:
         id: {type: string, format: uuid}
-        type: {type: string, enum: [sync, update_agent, reload_policy, collect_diagnostics]}
-        idempotencyKey: {type: string, minLength: 1, maxLength: 200}
+        device_id: {type: string, format: uuid}
+        type:
+          type: string
+          enum: [sync, update_agent, reload_policy, collect_diagnostics]
         payload: {type: object}
-    Revision:
-      type: object
-      additionalProperties: false
-      required: [id, channelId, manifestDigest, objectPath, createdAt]
-      properties:
-        id: {type: string, format: uuid}
-        channelId: {type: string, format: uuid}
-        baseRevisionId: {type: [string, "null"], format: uuid}
-        manifestDigest: {type: string, pattern: "^[a-f0-9]{64}$"}
-        objectPath: {type: string, minLength: 1}
-        createdAt: {type: string, format: date-time}
+        idempotency_key: {type: string}
+        status: {type: string, enum: [pending, claimed, succeeded, failed]}
+        created_at: {type: integer}
+        claimed_at: {type: [integer, "null"]}
+        acked_at: {type: [integer, "null"]}
+        result: {type: [object, "null"]}
+        error: {type: [string, "null"]}

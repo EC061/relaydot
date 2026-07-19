@@ -3,12 +3,17 @@
 The plan is milestone-based. Each milestone ends in an executable acceptance test,
 not only completed source files.
 
+Architecture baseline: one Next.js controller container, better-sqlite3 in WAL
+mode, an in-process Honker consumer using the same database file, one persistent
+`/app/data` volume, and one Python agent service on every managed node. There is
+no PostgreSQL, Redis, broker, or separate worker container.
+
 ## Milestone 0: decisions and threat model
 
 Deliverables:
 
 - Confirm project/CLI/package name.
-- Name the first production WebDAV provider and obtain a test account.
+- Confirm the encrypted local object layout and controller-volume backup target.
 - Approve the E2EE recovery and new-device key-approval workflow.
 - Confirm only platform-specific handling exceptions; complete `.claude`,
   `.claude.json`, `.codex`, and existing `.agents` regular-file trees are now the
@@ -16,7 +21,7 @@ Deliverables:
 - Define the pricing-estimate contract: official API list prices, standard-tier
   assumption when a local transcript omits modifiers, and a visible distinction
   between API-equivalent estimate and subscription invoice.
-- Write the threat model: malicious WebDAV server, stolen enrollment token,
+- Write the threat model: stolen controller volume, stolen enrollment token,
   compromised endpoint, compromised controller, archive traversal, secret leak,
   replay, downgrade, and supply-chain compromise.
 - Define support targets for macOS, Linux, Windows, Python, and self-hosted Docker.
@@ -28,7 +33,7 @@ recommended policy passes review using a real sample of both home directories.
 
 Deliverables:
 
-- Create pnpm workspace with `apps/web`, `apps/api`, and shared packages.
+- Create pnpm workspace with one Next.js controller and shared packages.
 - Create uv Python project under `agent/` with the `relaydot` console entry point.
 - Add formatting, linting, type checking, unit tests, secret scan, and CI.
 - Define OpenAPI v1 endpoints and JSON Schema for policies, manifests, conversation
@@ -36,7 +41,7 @@ Deliverables:
   device identity/rename, health, rollout state, catalog refresh jobs, candidates,
   semantic diffs, approval, and estimate revisions.
 - Generate TypeScript and Python clients/models from the contract.
-- Add Docker Compose for API, web, PostgreSQL, reverse proxy, and test WebDAV.
+- Add Docker Compose for one controller and its persistent data volume.
 
 Acceptance: a clean checkout starts locally, both clients are generated without a
 diff, and CI verifies schema compatibility.
@@ -69,9 +74,9 @@ deterministic conflicts without data loss.
 
 Deliverables:
 
-- PostgreSQL migrations and typed data access.
-- WebDAV capability probe and adapter with immutable put/get/delete, retries,
-  timeouts, checksum verification, and provider error normalization.
+- Versioned SQLite migrations and typed better-sqlite3 data access.
+- Encrypted local object adapter under `/app/data/objects` with immutable
+  put/get, checksums, atomic rename, and backup verification.
 - Endpoint encryption format, per-device key envelopes, trusted-device approval,
   recovery key flow, key rotation, and post-revocation rekey metadata.
 - One-time enrollment, device keys/tokens, revocation, heartbeat, head lookup,
@@ -115,7 +120,7 @@ reboot, synchronize a change, upgrade remotely, restart, and report healthy.
 Deliverables:
 
 - Next.js/shadcn application shell, responsive navigation, dark mode, and auth.
-- Fleet dashboard, device table/detail, event timeline, and WebDAV health.
+- Fleet dashboard, device table/detail, event timeline, and object-store health.
 - Editable machine display name and labels, with immutable device identity and
   rename audit history.
 - Policy form/YAML editor with validation and device dry-run.
@@ -158,17 +163,16 @@ trusted device, and Syncthing can be removed without losing any regular file.
 
 Deliverables:
 
-- Compatibility matrix against Nextcloud, Apache mod_dav, rclone WebDAV, and the
-  production provider.
+- Compatibility matrix across supported local filesystems and backup targets.
 - Chaos tests: timeouts, corrupt downloads, stale ETags, quota exhaustion, API
-  restart, database restart, WebDAV outage, and endpoint power loss during apply.
+  restart, database restart, volume exhaustion, and endpoint power loss during apply.
 - Security review, dependency/license scan, SBOM, backup/restore drill, key
   rotation, audit retention, and rate-limit tests.
 - Performance tests using realistic file counts and 100/1,000 simulated agents.
 - Operator documentation, upgrade policy, disaster recovery, and troubleshooting.
 
 Acceptance: no test loses an allowed file or deletes an excluded file; a controller
-restore can reconstruct all current heads from PostgreSQL backup plus WebDAV.
+restore can reconstruct all current heads from a consistent `/app/data` backup.
 
 ## Suggested build order within each milestone
 
@@ -185,14 +189,14 @@ choices before the dashboard grows large.
 - Complete `.claude`, `.claude.json`, `.codex`, and existing `.agents` regular-file
   content syncs across the three supported operating systems, including projects,
   sessions, plugins, settings, credentials, databases, caches, and attachments.
-- The controller and WebDAV provider cannot decrypt conversation content.
+- The controller cannot decrypt conversation content.
 - No local deletion permanently removes a retained file while full-retention mode
   is active; the controller keeps all encrypted revisions and tombstones forever.
 - Concurrent changes never silently overwrite each other.
 - A newly enrolled machine reaches the current revision from a one-line install.
 - The controller can trigger and audit a pinned update for all agents, including
   agents that were offline at dispatch time.
-- WebDAV corruption, outage, or rollback cannot cause silent local deletion.
+- Object corruption, volume failure, or rollback cannot cause silent local deletion.
 - The console provides device status, revisions, conflicts, policy management,
   storage health, update rollout, machine rename/filters, and audit history.
 - Usage totals are idempotent and filterable by machine; hourly, daily, weekly,

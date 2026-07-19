@@ -60,7 +60,7 @@ Official starting points:
 
 ## Refresh pipeline
 
-`POST /api/v1/catalog/refresh` creates a durable PostgreSQL job and returns `202`
+`POST /api/v1/catalog/refresh` creates a durable Honker job and returns `202`
 with its ID. The web page follows progress through SSE and can safely reconnect.
 
 1. Fetch only configured HTTPS URLs on the fixed host allowlist. Use ETag and
@@ -86,7 +86,7 @@ catalog remains active.
 
 ## Versioned representation
 
-PostgreSQL uses these records:
+SQLite uses these records:
 
 - `catalog_sources`: configured kind, provider, URL, credential reference, state;
 - `catalog_fetches`: immutable raw-fetch evidence and parser outcome;

@@ -5,7 +5,7 @@
 Relaydot shows usage from synchronized Claude and Codex conversations without
 indexing prompt or response text in the controller database. Parsing happens on
 the source endpoint. The endpoint submits signed, normalized usage facts while the
-complete conversation remains end-to-end encrypted in WebDAV.
+complete conversation remains end-to-end encrypted in controller object storage.
 
 The dashboard provides:
 
@@ -174,7 +174,7 @@ Reasoning tokens are priced inside output and are never charged a second time.
 
 ## Aggregation design
 
-Raw usage facts remain the source of truth. PostgreSQL maintains hourly and daily
+Raw usage facts remain the source of truth. SQLite maintains hourly and daily
 rollups by device, project, provider, and model. Weekly/monthly views sum daily
 rollups; arbitrary ranges query hourly or raw facts as appropriate. Late-arriving
 historical imports invalidate only the affected buckets.

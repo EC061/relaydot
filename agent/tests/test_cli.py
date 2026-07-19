@@ -5,7 +5,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from relaydot.cli import app
+from relaydot.cli import DEFAULT_POLICY, app
 
 runner = CliRunner()
 
@@ -14,6 +14,15 @@ def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert result.stdout.strip() == "0.1.0"
+
+
+def test_packaged_default_policy_is_available() -> None:
+    assert DEFAULT_POLICY.is_file()
+    repository_policy = Path(__file__).parents[2] / "policies" / "recommended.yaml"
+    assert DEFAULT_POLICY.read_bytes() == repository_policy.read_bytes()
+    result = runner.invoke(app, ["config", "validate"])
+    assert result.exit_code == 0
+    assert "valid: full-mirror-retain-forever (4 roots)" in result.stdout
 
 
 def test_doctor_reports_machine_readable_health() -> None:

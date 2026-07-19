@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import platform
+import socket
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -11,22 +12,27 @@ from typing import Annotated
 import typer
 
 from . import __version__
+from .controller import AgentService, ControllerClient, StateStore
 from .errors import RelaydotError
 from .manifest import build_manifest
 from .policy import load_policy
+from .service import ServiceInstaller
 
 app = typer.Typer(help="Relaydot endpoint synchronization agent", no_args_is_help=True)
 config_app = typer.Typer(help="Validate and inspect local policy")
 sync_app = typer.Typer(help="Inspect or synchronize local state")
+service_app = typer.Typer(help="Run the managed-node agent service")
 app.add_typer(config_app, name="config")
 app.add_typer(sync_app, name="sync")
+app.add_typer(service_app, name="service")
 
 
 def _default_policy() -> Path:
-    return Path(__file__).resolve().parents[3] / "policies" / "recommended.yaml"
+    return Path(__file__).with_name("data") / "recommended.yaml"
 
 
 DEFAULT_POLICY = _default_policy()
+DEFAULT_STATE = Path("~/.relaydot/agent.json").expanduser()
 
 
 @app.callback(invoke_without_command=True)
@@ -94,6 +100,81 @@ def sync_inventory(
             sort_keys=True,
         )
     )
+
+
+@app.command()
+def enroll(
+    server: Annotated[str, typer.Option(help="Relaydot controller base URL")],
+    token: Annotated[str, typer.Option(help="Single-use enrollment token")],
+    name: Annotated[str, typer.Option(help="Device display name")] = socket.gethostname(),
+    state: Annotated[Path, typer.Option(help="Agent credential file")] = DEFAULT_STATE,
+) -> None:
+    """Enroll this node and store its device credential with owner-only permissions."""
+
+    client = ControllerClient(server)
+    try:
+        credentials = client.enroll(token, name)
+        StateStore(state).save(credentials)
+    finally:
+        client.close()
+    typer.echo(f"enrolled: {credentials.device_id}")
+
+
+def _run_service_once(state: Path, policy: Path, home: Path | None) -> list[dict[str, object]]:
+    credentials = StateStore(state).load()
+    client = ControllerClient(credentials.server)
+    try:
+        service = AgentService(credentials, client, policy, home)
+        return service.run_once()
+    finally:
+        client.close()
+
+
+@sync_app.command("now")
+def sync_now(
+    state: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_STATE,
+    policy: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_POLICY,
+    home: Annotated[Path | None, typer.Option(file_okay=False)] = None,
+) -> None:
+    """Heartbeat, claim durable controller commands, execute, and acknowledge them."""
+
+    typer.echo(json.dumps(_run_service_once(state, policy, home), sort_keys=True))
+
+
+@service_app.command("run")
+def service_run(
+    state: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_STATE,
+    policy: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_POLICY,
+    home: Annotated[Path | None, typer.Option(file_okay=False)] = None,
+    interval: Annotated[float, typer.Option(min=1, help="Polling interval in seconds")] = 10,
+    once: Annotated[bool, typer.Option(help="Process one polling cycle and exit")] = False,
+) -> None:
+    """Run the foreground managed-node service."""
+
+    credentials = StateStore(state).load()
+    client = ControllerClient(credentials.server)
+    service = AgentService(credentials, client, policy, home)
+    try:
+        if once:
+            outcomes = service.run_once()
+            typer.echo(json.dumps(outcomes, sort_keys=True))
+        else:
+            service.run_forever(interval)
+    finally:
+        client.close()
+
+
+@service_app.command("install")
+def service_install(
+    state: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_STATE,
+    policy: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_POLICY,
+    interval: Annotated[float, typer.Option(min=1, help="Polling interval in seconds")] = 10,
+    start: Annotated[bool, typer.Option(help="Enable and start immediately")] = False,
+) -> None:
+    """Install a per-user launchd, systemd, or Windows Scheduled Task service."""
+
+    path = ServiceInstaller().install(state, policy, interval, start=start)
+    typer.echo(f"installed: {path or 'Relaydot Agent scheduled task'}")
 
 
 @app.command()

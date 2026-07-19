@@ -1,5 +1,32 @@
 {
-  "name": "@relaydot/web",
+  "name": "@relaydot/controller",
   "version": "0.1.0",
-  "private": true
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "lint": "tsc --noEmit",
+    "start": "next start",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@russellthehippo/honker-node": "0.4.0",
+    "better-sqlite3": "12.11.1",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "typescript": "6.0.2",
+    "vitest": "4.1.10"
+  }
 }
