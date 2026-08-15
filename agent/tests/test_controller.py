@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import stat
 from pathlib import Path
 
 import httpx
 import pytest
+from fakedav import BASE_URL, FakeDav
 
 from relaydot.controller import (
     AgentCredentials,
@@ -13,6 +15,7 @@ from relaydot.controller import (
     ControllerClient,
     StateStore,
 )
+from relaydot.webdav import WebdavClient, object_path
 
 
 def credentials() -> AgentCredentials:
@@ -67,14 +70,22 @@ def test_controller_client_owned_transport_and_http_errors() -> None:
 
 
 class StubController:
-    def __init__(self, commands: list[dict[str, object]]) -> None:
+    def __init__(
+        self,
+        commands: list[dict[str, object]],
+        storage: dict[str, object] | None = None,
+    ) -> None:
         self.commands = commands
         self.acks: list[dict[str, object]] = []
         self.heartbeats = 0
+        self._storage = storage
 
     def heartbeat(self, _credentials: AgentCredentials) -> dict[str, object]:
         self.heartbeats += 1
         return {"server_time": 1}
+
+    def storage(self, _credentials: AgentCredentials) -> dict[str, object] | None:
+        return self._storage
 
     def claim(self, _credentials: AgentCredentials, limit: int = 10) -> list[dict[str, object]]:
         assert limit == 10
@@ -123,6 +134,69 @@ def test_agent_service_executes_and_acknowledges_commands(
         "failed",
     ]
     assert outcomes[0]["result"]["files"] == 1  # type: ignore[index]
+    # No backend configured: sync still reports the local inventory instead of
+    # failing every scheduled run.
+    assert outcomes[0]["result"]["storage"] == "unconfigured"  # type: ignore[index]
     assert outcomes[1]["result"] == {"policy": "test", "roots": 2}
     assert "remote package updates" in str(outcomes[3]["error"])
     assert "unsupported command type" in str(outcomes[4]["error"])
+
+
+def test_sync_command_exchanges_content_through_webdav(policy_file: Path, tmp_path: Path) -> None:
+    root = tmp_path / ".config-tool"
+    root.mkdir()
+    (root / "settings.json").write_text("{}")
+    dav = FakeDav()
+    stub = StubController(
+        [{"id": "sync", "type": "sync"}],
+        storage={"base_url": BASE_URL, "username": dav.username, "password": dav.password},
+    )
+    service = AgentService(
+        credentials(),
+        stub,  # type: ignore[arg-type]
+        policy_file,
+        home=tmp_path,
+        sync_state=tmp_path / "sync-state.json",
+        webdav_factory=lambda config: WebdavClient.from_config(config, dav.client()),
+    )
+
+    outcomes = service.run_once()
+    result = outcomes[0]["result"]
+    assert isinstance(result, dict)
+    assert result["storage"] == "webdav"
+    assert result["uploaded"] == 1
+    digest = hashlib.sha256(b"{}").hexdigest()
+    assert dav.files[object_path(digest)] == b"{}"
+    published = json.loads(dav.files["manifests/device-1.json"])
+    assert published["device_id"] == "device-1"
+    assert [entry["path"] for entry in published["entries"]] == ["config/settings.json"]
+
+
+def test_storage_lookup_treats_409_as_unconfigured() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/storage"):
+            return httpx.Response(409, json={"error": "no storage backend is configured"})
+        return httpx.Response(200, json={})
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    client = ControllerClient("https://controller.test", http)
+    assert client.storage(credentials()) is None
+    client.close()
+    http.close()
+
+
+def test_storage_lookup_returns_the_shared_credential() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"base_url": BASE_URL, "username": "user", "password": "pass"}
+        )
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    client = ControllerClient("https://controller.test", http)
+    assert client.storage(credentials()) == {
+        "base_url": BASE_URL,
+        "username": "user",
+        "password": "pass",
+    }
+    client.close()
+    http.close()

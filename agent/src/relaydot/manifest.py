@@ -78,12 +78,12 @@ def _scan_root(root: RootPolicy, *, report_secrets: bool) -> Iterable[ManifestEn
 
     for current, directories, files in os.walk(root.path, followlinks=False):
         current_path = Path(current)
-        # Symlinked directories are represented as links and must not be traversed.
         for name in list(directories):
             candidate = current_path / name
+            relative = candidate.relative_to(root.path).as_posix()
+            # Symlinked directories are represented as links, never traversed.
             if candidate.is_symlink():
                 directories.remove(name)
-                relative = candidate.relative_to(root.path).as_posix()
                 if root.includes(relative):
                     target = os.readlink(candidate)
                     yield ManifestEntry(
@@ -94,6 +94,10 @@ def _scan_root(root: RootPolicy, *, report_secrets: bool) -> Iterable[ManifestEn
                         logical_type="symlink",
                         link_target=target,
                     )
+            # Skip whole ignored subtrees rather than walking a cache directory
+            # only to discard every entry inside it.
+            elif root.prunes_directory(relative):
+                directories.remove(name)
         for name in files:
             candidate = current_path / name
             relative = candidate.relative_to(root.path).as_posix()

@@ -88,10 +88,5 @@ def test_unreadable_or_malformed_policy(tmp_path: Path) -> None:
 def test_repository_recommended_policy_is_loadable(tmp_path: Path) -> None:
     policy_path = Path(__file__).resolve().parents[2] / "policies" / "recommended.yaml"
     policy = load_policy(policy_path, home=tmp_path)
-    assert policy.name == "full-mirror-retain-forever"
-    assert {root.name for root in policy.roots} == {
-        "claude-full",
-        "claude-global-state",
-        "codex-full",
-        "agents-full",
-    }
+    assert policy.name == "curated-subset"
+    assert {root.name for root in policy.roots} == {"claude", "codex"}

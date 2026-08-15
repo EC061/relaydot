@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from .errors import PolicyError
+from .ignore import NO_IGNORES, IgnoreSet, parse_ignore
 from .paths import normalize_relative_path
 
 
@@ -22,13 +23,24 @@ class RootPolicy:
     optional: bool = False
     classification: str = "unspecified"
     sync_mode: str = "full-mirror"
+    ignore: IgnoreSet = NO_IGNORES
 
     def includes(self, relative: str) -> bool:
         normalized = normalize_relative_path(relative)
+        if self.ignore:
+            # Ordered ignore rules fully determine membership when present.
+            return self.ignore.keeps(normalized)
         subject = f"/{normalized}"
         included = any(_glob_match(subject, pattern) for pattern in self.include)
         excluded = any(_glob_match(subject, pattern) for pattern in self.exclude)
         return included and not excluded
+
+    def prunes_directory(self, relative: str) -> bool:
+        """True when a directory and its whole subtree can be skipped."""
+
+        if not self.ignore:
+            return False
+        return self.ignore.ignored(normalize_relative_path(relative))
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +113,7 @@ def load_policy(path: Path, *, home: Path | None = None) -> SyncPolicy:
         exclude = item.get("exclude", [])
         if not isinstance(exclude, list) or not all(isinstance(x, str) for x in exclude):
             raise PolicyError(f"root {name!r} exclude must be a string list")
+        ignore = parse_ignore(item["ignore"]) if item.get("ignore") is not None else NO_IGNORES
         for pattern in [*include, *exclude]:
             if not pattern.startswith("/") or ".." in pattern.split("/"):
                 raise PolicyError(f"unsafe glob in root {name!r}: {pattern!r}")
@@ -121,6 +134,7 @@ def load_policy(path: Path, *, home: Path | None = None) -> SyncPolicy:
                 optional=bool(item.get("optional", False)),
                 classification=str(item.get("classification", "unspecified")),
                 sync_mode=str(item.get("syncMode", "full-mirror")),
+                ignore=ignore,
             )
         )
 

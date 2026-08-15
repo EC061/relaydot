@@ -22,7 +22,7 @@ def test_packaged_default_policy_is_available() -> None:
     assert DEFAULT_POLICY.read_bytes() == repository_policy.read_bytes()
     result = runner.invoke(app, ["config", "validate"])
     assert result.exit_code == 0
-    assert "valid: full-mirror-retain-forever (4 roots)" in result.stdout
+    assert "valid: curated-subset (2 roots)" in result.stdout
 
 
 def test_doctor_reports_machine_readable_health() -> None:
@@ -68,3 +68,38 @@ def test_inventory_reports_counts_without_content(policy_file: Path, tmp_path: P
     assert payload["files"] == 1
     assert payload["bytes"] == 7
     assert "content" not in result.stdout
+
+
+def test_sync_status_and_diff_report_local_state(policy_file: Path, tmp_path: Path) -> None:
+    root = tmp_path / ".config-tool"
+    root.mkdir()
+    (root / "file").write_text("content")
+    credential = tmp_path / "agent.json"
+    credential.write_text(
+        json.dumps(
+            {
+                "server": "https://controller.test",
+                "device_id": "device-1",
+                "device_token": "secret",
+                "name": "lab-one",
+            }
+        )
+    )
+    shared = ["--state", str(credential), "--policy", str(policy_file), "--home", str(tmp_path)]
+
+    status = runner.invoke(app, ["sync", "status", *shared])
+    assert status.exit_code == 0
+    payload = json.loads(status.stdout)
+    assert payload["files"] == 1
+    # Nothing has been exchanged yet, so no object is known and no path applied.
+    assert payload["known_objects"] == 0
+    assert payload["applied_paths"] == 0
+    assert payload["state_path"].endswith("sync-state.json")
+
+    diff = runner.invoke(app, ["sync", "diff", *shared])
+    assert diff.exit_code == 0
+    assert json.loads(diff.stdout) == {
+        "added": ["config/file"],
+        "changed": [],
+        "removed": [],
+    }
