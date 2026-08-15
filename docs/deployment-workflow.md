@@ -6,10 +6,13 @@ backup/restore commands, TLS, and managed-node installation, see
 
 ## Image delivery
 
-[`controller-image.yml`](../.github/workflows/controller-image.yml) runs for pull
-requests, pushes to `main`, and version tags.
+The `image` job in [`ci.yml`](../.github/workflows/ci.yml) runs for pull
+requests, pushes to `main`, and version tags. It declares
+`needs: [controller, agent]`, so nothing is published unless the tests, type
+checks, and contract checks passed first.
 
-1. Pull requests build the Dockerfile without publishing an image.
+1. Pull requests build the Dockerfile without publishing an image, so a broken
+   build is caught before it reaches `main`.
 2. A `main` or tag push logs in to GHCR using the workflow's short-lived
    `GITHUB_TOKEN`.
 3. Buildx builds the standalone Next.js image with provenance and GitHub Actions
@@ -98,7 +101,7 @@ If the host cannot start any image, restore a verified data backup using
   stopped-volume backup and retention.
 - [`restore-controller.sh`](../infra/scripts/restore-controller.sh): checksum
   verification and guarded restore.
-- [`controller-image.yml`](../.github/workflows/controller-image.yml): GHCR
-  build, publish, and runtime smoke test.
+- [`ci.yml`](../.github/workflows/ci.yml): tests, type checks, contract and
+  deployment checks, and the gated GHCR build, publish, and runtime smoke test.
 - [`deploy-controller.yml`](../.github/workflows/deploy-controller.yml): manual
   SSH deployment through the protected production environment.
