@@ -4,8 +4,11 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Relaydot Controller",
-  description: "Self-hosted control plane for AI coding-tool state"
+  title: {
+    default: "Relaydot Control",
+    template: "%s · Relaydot"
+  },
+  description: "A calm, self-hosted control plane for every coding agent in your lab"
 };
 
 export default function RootLayout({

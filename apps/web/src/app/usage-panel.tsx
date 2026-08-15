@@ -175,7 +175,7 @@ export function UsagePanel({ summary }: { summary: UsageSummary }) {
             <a
               aria-current={summary.range === range.key ? "true" : undefined}
               className={summary.range === range.key ? "active" : undefined}
-              href={`/?range=${range.key}#usage`}
+              href={`/usage?range=${range.key}`}
               key={range.key}
             >
               {range.label}
