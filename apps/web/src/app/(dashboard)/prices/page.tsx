@@ -17,10 +17,9 @@ export default function PricesPage() {
 
   return (
     <div className="routePage">
-      <header className="routeHero compactHero">
+      <header className="routeHero">
         <div>
-          <p className="eyebrow"><span /> Cost catalog</p>
-          <h1>Rates you can<br /><em>stand behind.</em></h1>
+          <h1>Cost catalog</h1>
           <p className="lede">
             Review discovered models, approve official API rates, and keep fleet
             cost estimates grounded in a source.

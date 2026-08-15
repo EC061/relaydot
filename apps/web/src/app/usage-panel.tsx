@@ -15,8 +15,9 @@ import type { ProviderKey, RangeKey, UsageSummary } from "@/lib/analytics";
 
 /**
  * Categorical slots 1 and 2 from the documented visualization palette, stepped
- * for a dark surface and validated against this panel's --deep background
- * (lightness band, chroma floor, CVD separation, normal-vision floor, contrast).
+ * for a dark surface and validated against this panel's --surface background
+ * (lightness band, chroma floor, CVD separation, normal-vision floor, contrast):
+ * adjacent CVD ΔE 26.8, normal-vision ΔE 31.8, both above 3:1 on the surface.
  * Colour follows the provider, never its rank, so filtering never repaints.
  */
 const SERIES_COLOR: Record<ProviderKey, string> = {
@@ -482,9 +483,10 @@ export function UsagePanel({ summary }: { summary: UsageSummary }) {
 
         {summary.unpricedModels.length > 0 ? (
           <p className="quiet">
-            {summary.unpricedModels.length} model
-            {summary.unpricedModels.length === 1 ? "" : "s"} have no reviewed price and
-            contribute tokens but no cost: {summary.unpricedModels.join(", ")}.
+            {summary.unpricedModels.length === 1
+              ? "1 model has no reviewed price, so it contributes"
+              : `${summary.unpricedModels.length} models have no reviewed price, so they contribute`}{" "}
+            tokens but no cost: {summary.unpricedModels.join(", ")}.
           </p>
         ) : null}
       </div>

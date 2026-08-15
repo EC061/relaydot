@@ -27,13 +27,12 @@ export default async function UsagePage({
 
   return (
     <div className="routePage">
-      <header className="routeHero compactHero">
+      <header className="routeHero">
         <div>
-          <p className="eyebrow"><span /> Usage intelligence</p>
-          <h1>Spend, without<br /><em>the guesswork.</em></h1>
+          <h1>Usage</h1>
           <p className="lede">
-            Follow token volume, cache efficiency, and API-equivalent cost over
-            time—broken down by provider and model.
+            Token volume, cache efficiency, and API-equivalent cost over time,
+            broken down by provider and model.
           </p>
         </div>
       </header>

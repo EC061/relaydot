@@ -14,10 +14,9 @@ export default function ActivityPage() {
 
   return (
     <div className="routePage">
-      <header className="routeHero compactHero">
+      <header className="routeHero">
         <div>
-          <p className="eyebrow"><span /> Immutable trail</p>
-          <h1>Every change.<br /><em>Nothing hidden.</em></h1>
+          <h1>Activity</h1>
           <p className="lede">
             A chronological record of enrollments, commands, settings, and
             controller actions across the lab.
@@ -33,10 +32,10 @@ export default function ActivityPage() {
         </header>
         {events.length === 0 ? (
           <div className="largeEmpty">
-            <span>00</span>
+            <span aria-hidden="true">·</span>
             <div>
-              <h3>No activity yet.</h3>
-              <p>Your immutable event trail begins when the first node is enrolled.</p>
+              <h3>No activity yet</h3>
+              <p>The event trail begins when the first node is enrolled.</p>
             </div>
           </div>
         ) : (
@@ -46,8 +45,8 @@ export default function ActivityPage() {
                 <span className="eventNumber">{String(events.length - index).padStart(2, "0")}</span>
                 <i />
                 <div>
-                  <strong>{String(event.action).replaceAll("_", " ")}</strong>
-                  <p>{String(event.resource_type).replaceAll("_", " ")}</p>
+                  <strong>{String(event.action)}</strong>
+                  <p>{String(event.resource_type)}</p>
                 </div>
                 <time>{relativeTime(Number(event.created_at))}</time>
               </li>

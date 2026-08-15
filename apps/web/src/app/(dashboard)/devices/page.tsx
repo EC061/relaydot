@@ -16,16 +16,15 @@ export default function DevicesPage() {
 
   return (
     <div className="routePage">
-      <header className="routeHero compactHero">
+      <header className="routeHero">
         <div>
-          <p className="eyebrow"><span /> Managed nodes</p>
-          <h1>Your lab,<br /><em>alive at a glance.</em></h1>
+          <h1>Devices</h1>
           <p className="lede">
             Bring a new agent into the fleet, then see its platform, software
-            version, and latest check-in in one focused view.
+            version, and latest check-in in one place.
           </p>
         </div>
-        <span className="routeCount">{devices.length.toString().padStart(2, "0")} nodes</span>
+        <span className="routeCount">{devices.length} nodes</span>
       </header>
 
       <EnrollmentPanel />
@@ -40,9 +39,9 @@ export default function DevicesPage() {
         </header>
         {devices.length === 0 ? (
           <div className="largeEmpty">
-            <span>01</span>
+            <span aria-hidden="true">+</span>
             <div>
-              <h3>No agents enrolled yet.</h3>
+              <h3>No agents enrolled yet</h3>
               <p>Generate a command above and run it on the first machine you want Relaydot to manage.</p>
             </div>
           </div>

@@ -23,10 +23,9 @@ export default function StoragePage() {
 
   return (
     <div className="routePage">
-      <header className="routeHero compactHero">
+      <header className="routeHero">
         <div>
-          <p className="eyebrow"><span /> Shared state</p>
-          <h1>One store.<br /><em>Every agent.</em></h1>
+          <h1>Shared state</h1>
           <p className="lede">
             Connect the WebDAV backend that keeps settings, history, and agent
             state synchronized across the fleet.

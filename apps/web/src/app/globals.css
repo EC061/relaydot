@@ -1,52 +1,78 @@
+/* ==========================================================================
+   Relaydot control plane — dark-native visual system
+
+   Three rules hold this together, and every value below follows from them.
+
+   1. Depth is lightness, never hue. --base < --surface < --raised is the only
+      elevation ladder. The previous build tinted raised panels deep teal, which
+      forced every foreground colour to fight a saturated fill and left dense
+      tables sitting on a coloured slab. Surfaces here are one near-neutral
+      slate at four steps, so text contrast is predictable everywhere.
+
+   2. Hue is reserved for meaning. --signal marks what is live or interactive,
+      --attention what is waiting on the operator, --alert what destroys
+      something, --ok what is healthy. Nothing decorative is allowed to borrow
+      them, which is what keeps a coloured dot readable at 6px.
+
+   3. Anything measured is set in --mono with tabular figures; anything
+      explanatory is set in --sans. Counts, rates, digests, timestamps, and
+      axis labels are instrument readouts and are typeset as such.
+   ========================================================================== */
+
 :root {
-  /* Dark theme. --ink is the reading colour and --paper the page behind it, so
-     the two swap roles from a light build, and --green stays the raised surface
-     the feature panels sit on. The routed shell below re-declares this palette;
-     both blocks are kept in step so the cascade order between them cannot
-     change what ships. */
   color-scheme: dark;
 
-  --ink: #e8ece7;
-  --muted: #8e988f;
-  --paper: #0b100e;
-  --panel: #131a17;
-  --line: #253029;
-  --lime: #d7ff68;
-  --green: #173f35;
-  --orange: #ff6b46;
+  /* Elevation ladder. */
+  --base: #0d1014;
+  --sunken: #0a0d11;
+  --surface: #151920;
+  --raised: #1c212a;
+  --line: #252b35;
+  --line-soft: #1d232c;
+  --line-strong: #333b48;
 
-  /* Only declared here, and read by both blocks: the dark text that rides on a
-     --lime fill, which is the one place a light theme's ink survives. */
-  --on-accent: #16201b;
+  /* Text. */
+  --ink: #e7eaf0;
+  --muted: #9aa3b2;
+  --faint: #7d8695;
+
+  /* Semantic hues. Each has exactly one job. */
+  --signal: #4fc9de;
+  --signal-ink: #06222a;
+  --signal-edge: #245f6c;
+  --signal-wash: rgb(79 201 222 / 9%);
+  --attention: #e8b567;
+  --ok: #5ad6a0;
+  --alert: #ff8b7a;
+
+  /* Chart series. Categorical slots 1 and 2 of the documented visualization
+     palette, dark steps, validated against --surface: adjacent CVD ΔE 26.8,
+     normal-vision ΔE 31.8, both above 3:1 on the surface they sit on. */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo,
+    Consolas, monospace;
+
+  --radius: 10px;
+  --radius-sm: 6px;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-/* The top bar is sticky at 72px, so anchor targets need matching clearance or
-   a jump leaves the section heading hidden underneath it. */
-:target,
-#overview,
-#storage,
-#catalog,
-#devices,
-#activity {
-  scroll-margin-top: 88px;
-}
-
-
 body {
-  margin: 0;
-  background:
-    radial-gradient(circle at 73% 0%, rgb(215 255 104 / 6%), transparent 32rem),
-    var(--paper);
+  background: var(--base);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  min-width: 320px;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -54,244 +80,14 @@ a {
   text-decoration: none;
 }
 
-.topbar {
-  align-items: center;
-  background: rgb(11 16 14 / 88%);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  height: 72px;
-  justify-content: space-between;
-  padding: 0 34px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  backdrop-filter: blur(14px);
+button,
+input {
+  font: inherit;
 }
 
-.brand {
-  align-items: center;
-  display: flex;
-  font-size: 20px;
-  font-weight: 800;
-  gap: 11px;
-  letter-spacing: -0.04em;
-}
-
-.brandMark {
-  align-items: end;
-  display: flex;
-  gap: 3px;
-  height: 25px;
-  transform: rotate(-8deg);
-  width: 27px;
-}
-
-.brandMark i {
-  background: var(--ink);
-  border-radius: 10px;
-  display: block;
-  width: 6px;
-}
-
-.brandMark i:nth-child(1) {
-  height: 12px;
-}
-
-.brandMark i:nth-child(2) {
-  height: 24px;
-}
-
-.brandMark i:nth-child(3) {
-  height: 17px;
-}
-
-.systemBadge {
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  display: flex;
-  font-size: 12px;
-  font-weight: 700;
-  gap: 8px;
-  padding: 9px 13px;
-}
-
-.topbarActions {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-}
-
-.signOut {
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 9px 15px;
-}
-
-.signOut:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
-
-.signOut:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.loginShell {
-  align-items: center;
-  display: flex;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 24px;
-}
-
-.loginCard {
-  background: var(--green);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  color: var(--ink);
-  max-width: 430px;
-  padding: 34px;
-  width: 100%;
-}
-
-.loginCard .eyebrow {
-  color: var(--lime);
-  margin-bottom: 8px;
-}
-
-.loginCard h1 {
-  font-size: 27px;
-  letter-spacing: -0.04em;
-  margin: 0 0 10px;
-}
-
-.loginCard .lede {
-  color: #b7bcb0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0 0 22px;
-}
-
-.loginCard .brandMark {
-  margin-bottom: 22px;
-}
-
-.loginCard .brandMark i {
-  background: var(--lime);
-}
-
-.loginCard label {
-  color: #b7bcb0;
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  margin-bottom: 7px;
-}
-
-.pulse {
-  background: #58a06c;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgb(88 160 108 / 14%);
-  height: 7px;
-  width: 7px;
-}
-
-.shell {
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  margin: 0 auto;
-  max-width: 1440px;
-  min-height: calc(100vh - 72px);
-}
-
-aside {
-  border-right: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  padding: 42px 25px 28px;
-}
-
-.eyebrow {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  margin: 0 0 12px;
-  text-transform: uppercase;
-}
-
-nav {
-  display: grid;
-  gap: 6px;
-}
-
-nav a {
-  align-items: center;
-  border-radius: 8px;
-  color: var(--muted);
-  display: flex;
-  font-size: 13px;
-  font-weight: 700;
-  gap: 13px;
-  padding: 11px 12px;
-}
-
-nav a span {
-  font-family: monospace;
-  font-size: 9px;
-  opacity: 0.65;
-}
-
-nav a:hover {
-  background: var(--panel);
-  color: var(--ink);
-}
-
-/* Inverting the active item is what carried it on paper; on a dark rail the
-   accent fill is what separates it from a hover. */
-nav a.active {
-  background: var(--lime);
-  color: var(--on-accent);
-}
-
-.storageCard {
-  border-top: 1px solid var(--line);
-  margin-top: auto;
-  padding-top: 22px;
-}
-
-.storageCard p,
-.storageCard span {
-  color: var(--muted);
-  display: block;
-  font-size: 10px;
-  margin: 0;
-}
-
-.storageCard strong {
-  display: block;
-  font-family: monospace;
-  font-size: 12px;
-  margin: 7px 0;
-}
-
-.content {
-  padding: 58px clamp(28px, 6vw, 86px) 90px;
-}
-
-.hero {
-  align-items: start;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 43px;
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1,
@@ -301,176 +97,826 @@ p {
   margin-top: 0;
 }
 
-h1 {
-  font-size: clamp(42px, 6vw, 74px);
-  letter-spacing: -0.075em;
-  line-height: 0.95;
-  margin-bottom: 22px;
-  max-width: 760px;
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
 }
 
-.lede {
-  color: var(--muted);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 17px;
-  line-height: 1.55;
-  max-width: 580px;
-}
+/* --------------------------------------------------------------- primitives */
 
-.version {
-  background: var(--lime);
-  border-radius: 999px;
-  color: var(--on-accent);
-  font-family: monospace;
+/* Section kickers are labels on an instrument, so they are set in mono rather
+   than tracked-out sans. */
+.eyebrow,
+.navLabel,
+.metricIndex,
+.tileLabel,
+.controllerCardKicker,
+.storageFacts dt,
+.breakdown thead th {
+  color: var(--faint);
+  font-family: var(--mono);
   font-size: 10px;
-  font-weight: 700;
-  padding: 8px 11px;
-}
-
-.metrics {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(3, 1fr);
-  margin-bottom: 42px;
-}
-
-.metrics article {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  min-height: 175px;
-  padding: 22px;
-  position: relative;
-}
-
-.metrics article::after {
-  background: var(--lime);
-  border-radius: 50%;
-  content: "";
-  height: 8px;
-  position: absolute;
-  right: 20px;
-  top: 20px;
-  width: 8px;
-}
-
-.metrics p {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.metrics strong {
-  display: block;
-  font-size: 58px;
-  letter-spacing: -0.08em;
-  line-height: 1;
-  margin: 29px 0 9px;
-}
-
-.metrics .wordMetric {
-  font-size: 38px;
-  letter-spacing: -0.05em;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  margin: 0 0 10px;
   text-transform: uppercase;
 }
 
-.metrics span {
-  color: var(--muted);
-  font-family: monospace;
-  font-size: 10px;
+/* The signature atom. relaydot is named for a status dot, so one dot carries
+   state everywhere it appears — header, rail, metric, table row — and only its
+   colour changes. Live dots breathe; nothing else on the page moves. */
+.statusDot,
+.signal,
+.fleetDot,
+.activityPreview li > span,
+.activityLog li > i,
+.deviceGrid .onlinePill i,
+.deviceGrid .offlinePill i {
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  height: 7px;
+  width: 7px;
 }
 
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  margin-top: 14px;
-  overflow: hidden;
+.statusDot,
+.signal.good,
+.fleetDot.live,
+.onlinePill i {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px rgb(90 214 160 / 14%);
 }
 
-.enrollmentPanel {
+.statusDot,
+.fleetDot.live {
+  animation: breathe 3.4s ease-in-out infinite;
+}
+
+.signal.warm {
+  background: var(--attention);
+}
+
+/* Audit rows are markers, not states — an amber dot here would claim every
+   recorded event is waiting on someone, so they stay neutral. */
+.activityPreview li > span,
+.activityLog li > i {
+  background: var(--line-strong);
+}
+
+.fleetDot,
+.signal.idle,
+.offlinePill i {
+  background: var(--line-strong);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgb(90 214 160 / 14%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px rgb(90 214 160 / 5%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Every measured value shares one treatment. */
+.metricStrip strong,
+.metricStrip p,
+.count,
+.routeCount,
+.version,
+.controllerCard strong,
+.controllerCard p,
+.controllerCard small,
+.eventNumber,
+.deviceGrid dd,
+.storageFacts dd,
+.costHero,
+.tileRow strong,
+.providerCost,
+.breakdown .num,
+.overviewList time,
+.activityPreview time,
+.activityLog time,
+.overviewList p,
+.activityPreview p,
+.headerStatus,
+.fleetReadout,
+.nodeAvatar,
+.axisText,
+.tooltip {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------- app shell */
+
+.appShell {
+  min-height: 100vh;
+}
+
+.appHeader {
   align-items: center;
-  background: var(--green);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  color: var(--ink);
-  display: grid;
-  gap: 36px;
-  grid-template-columns: minmax(230px, 0.75fr) minmax(340px, 1.25fr);
-  margin-bottom: 14px;
-  padding: 28px;
+  background: rgb(13 16 20 / 88%);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 24px;
+  height: 64px;
+  justify-content: space-between;
+  padding: 0 clamp(18px, 2.6vw, 34px);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(16px);
 }
 
-.enrollmentPanel .eyebrow {
-  color: var(--lime);
+.brand {
+  align-items: center;
+  display: flex;
+  flex: none;
+  font-size: 16px;
+  font-weight: 650;
+  gap: 10px;
+  letter-spacing: -0.02em;
+}
+
+/* Three bars reading as a signal meter. The tallest is the live one, so it
+   wears --signal and ties the wordmark to the dot language. */
+.brandMark {
+  align-items: flex-end;
+  display: flex;
+  gap: 2px;
+  height: 18px;
+  width: 20px;
+}
+
+.brandMark i {
+  background: var(--muted);
+  border-radius: 4px;
+  display: block;
+  width: 4px;
+}
+
+.brandMark i:nth-child(1) {
+  height: 9px;
+}
+
+.brandMark i:nth-child(2) {
+  background: var(--signal);
+  height: 18px;
+}
+
+.brandMark i:nth-child(3) {
+  height: 13px;
+}
+
+.appHeader .brand em {
+  border-left: 1px solid var(--line);
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  margin-left: 2px;
+  padding-left: 12px;
+  text-transform: uppercase;
+}
+
+/* The fleet, at a glance, on every screen: one dot per enrolled node. This is
+   the page's thesis, so it sits in the header rather than on one route. */
+.fleetStrip {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  margin-right: auto;
+  min-width: 0;
+}
+
+.fleetDots {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+.fleetReadout {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.fleetReadout b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.headerStatus {
+  align-items: center;
+  display: flex;
+  flex: none;
+  font-size: 11px;
+  gap: 8px;
+  letter-spacing: 0.03em;
+}
+
+.headerStatus > span:not(.statusDot) {
+  color: var(--muted);
+}
+
+.signOut {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 12px;
+  margin-left: 8px;
+  padding: 7px 14px;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.signOut:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.signOut:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.appBody {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  margin: 0 auto;
+  max-width: 1560px;
+  min-height: calc(100vh - 64px);
+}
+
+.sidebar {
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  justify-content: space-between;
+  padding: 30px 20px 26px;
+}
+
+.navLabel {
+  margin-left: 12px;
+}
+
+.desktopNav {
+  display: grid;
+  gap: 2px;
+}
+
+.desktopNav a {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  display: flex;
+  font-size: 13px;
+  gap: 10px;
+  padding: 9px 12px;
+  position: relative;
+  transition: background 130ms ease, color 130ms ease;
+}
+
+.desktopNav a:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+/* Active is marked by a signal rule down the item's own edge as well as a
+   lifted surface — the fill alone could not separate itself from a hover once
+   both went dark. */
+.desktopNav a.active {
+  background: var(--raised);
+  box-shadow: inset 2px 0 0 var(--signal);
+  color: var(--ink);
+}
+
+/* Counts ride the rail so the operator sees where the work is without opening
+   each route. Attention-coloured when something is waiting. */
+.navCount {
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+.navCount.attn {
+  color: var(--attention);
+}
+
+.controllerCard {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.controllerCardKicker {
+  display: block;
   margin-bottom: 8px;
 }
 
-.enrollmentPanel h2 {
-  margin-bottom: 10px;
+.controllerCard strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.enrollmentPanel > div > p:last-child {
-  color: #b7bcb0;
-  font-family: Georgia, "Times New Roman", serif;
+.controllerCard p {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 4px 0 0;
+}
+
+.controllerCard small {
+  color: var(--faint);
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-top: 10px;
+  text-transform: uppercase;
+}
+
+.pageFrame {
+  min-width: 0;
+  padding: 34px clamp(18px, 3.4vw, 46px) 80px;
+}
+
+.routePage {
+  margin: 0 auto;
+  max-width: 1180px;
+}
+
+/* ------------------------------------------------------------ page header */
+
+/* An operations tool opens on state, not on a slogan, so the page header is a
+   tight identifier and the data below it carries the weight. */
+.routeHero,
+.compactHero {
+  align-items: flex-end;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 28px;
+  justify-content: space-between;
+  margin-bottom: 26px;
+  padding-bottom: 22px;
+}
+
+.routeHero h1,
+.compactHero h1 {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.routeHero .lede,
+.compactHero .lede {
+  color: var(--muted);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
+  max-width: 620px;
+}
+
+.routeCount,
+.version {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 7px 12px;
+}
+
+.routeCount {
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------- surfaces & cards */
+
+.overviewCard,
+.deviceDirectory,
+.activityLog,
+.usagePanel,
+.storagePanel,
+.catalogPanel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.usagePanel,
+.storagePanel,
+.catalogPanel {
+  padding: 24px;
+}
+
+.overviewCard > header,
+.deviceDirectory > header,
+.activityLog > header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 18px 22px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 0;
+}
+
+.overviewCard > header .eyebrow,
+.deviceDirectory > header .eyebrow,
+.activityLog > header .eyebrow,
+.usageTop .eyebrow,
+.storagePanel .eyebrow,
+.catalogPanel .eyebrow,
+.enrollmentPanel .eyebrow {
+  margin-bottom: 6px;
+}
+
+.arrowLink {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 12px;
+  gap: 5px;
+  transition: color 130ms ease;
+}
+
+.arrowLink:hover {
+  color: var(--signal);
+}
+
+.arrowLink span {
+  color: var(--signal);
+}
+
+/* --------------------------------------------------------------- controls */
+
+.buttonRow button,
+.catalogTop button,
+.inputRow button,
+.catalogPanel button.small {
+  background: var(--signal);
+  border: 1px solid var(--signal);
+  border-radius: var(--radius-sm);
+  color: var(--signal-ink);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 15px;
+  transition: filter 130ms ease;
+  white-space: nowrap;
+}
+
+.buttonRow button:hover:not(:disabled),
+.catalogTop button:hover:not(:disabled),
+.inputRow button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.buttonRow button.ghost,
+.catalogPanel button.ghost {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--muted);
+}
+
+.buttonRow button.ghost:hover:not(:disabled),
+.catalogPanel button.ghost:hover:not(:disabled) {
+  border-color: var(--muted);
+  color: var(--ink);
+  filter: none;
+}
+
+.buttonRow button.danger,
+.catalogPanel button.danger {
+  color: var(--alert);
+}
+
+.buttonRow button.danger:hover:not(:disabled),
+.catalogPanel button.danger:hover:not(:disabled) {
+  border-color: var(--alert);
+  color: var(--alert);
+}
+
+.catalogPanel button.small {
+  font-size: 11px;
+  margin-left: 6px;
+  padding: 5px 10px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+label {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+/* Input wells sit *below* the surface rather than above it, which is what makes
+   a field read as a field on a dark page. */
+.inputRow {
+  display: flex;
+  gap: 8px;
+}
+
+.inputRow input,
+.priceGrid input {
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12px;
+  min-width: 0;
+  outline: none;
+  padding: 10px 12px;
+  transition: border-color 130ms ease;
+  width: 100%;
+}
+
+.inputRow input::placeholder,
+.priceGrid input::placeholder {
+  color: var(--faint);
+}
+
+.inputRow input:focus,
+.priceGrid input:focus {
+  border-color: var(--signal);
+}
+
+.formError {
+  color: var(--alert);
+  font-size: 12px;
+  margin: 10px 0 0;
+}
+
+.formNotice {
+  color: var(--signal);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+.quiet {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 14px 0 0;
+}
+
+/* ------------------------------------------------------------- empty states */
+
+/* An empty screen is an invitation to act, so it states the next move rather
+   than decorating the absence. */
+.compactEmpty,
+.largeEmpty {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  padding: 26px 22px;
+}
+
+.compactEmpty {
+  min-height: 128px;
+}
+
+.largeEmpty {
+  min-height: 170px;
+  padding: 32px;
+}
+
+.compactEmpty > span,
+.largeEmpty > span {
+  align-items: center;
+  background: var(--raised);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--signal);
+  display: flex;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 16px;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.largeEmpty > span {
+  font-size: 18px;
+  height: 48px;
+  width: 48px;
+}
+
+.compactEmpty strong,
+.largeEmpty h3 {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 5px;
+}
+
+.largeEmpty h3 {
+  font-size: 15px;
+}
+
+.compactEmpty p,
+.largeEmpty p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 520px;
+}
+
+/* ------------------------------------------------------------------ overview */
+
+/* Nodes / queue / database is a set of readings taken at once, not a sequence,
+   so the cards are labelled by what they measure and carry no step numbers. */
+.metricStrip {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.metricStrip article {
+  border-right: 1px solid var(--line);
+  padding: 18px 22px 16px;
+}
+
+.metricStrip article:last-child {
+  border-right: 0;
+}
+
+.metricIndex {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.metricStrip strong {
+  display: block;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.metricStrip .statusWord {
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+.metricStrip p {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 11px;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.overviewGrid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.overviewList,
+.activityPreview {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.overviewList li,
+.activityPreview li {
+  align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 13px 22px;
+}
+
+.overviewList li:last-child,
+.activityPreview li:last-child {
+  border-bottom: 0;
+}
+
+.nodeAvatar {
+  align-items: center;
+  background: var(--raised);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  display: flex;
+  font-size: 10px;
+  height: 30px;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  width: 30px;
+}
+
+.overviewList strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.activityPreview strong {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.overviewList p,
+.activityPreview p,
+.overviewList time,
+.activityPreview time {
+  color: var(--faint);
+  font-size: 10px;
+  margin: 3px 0 0;
+}
+
+/* ------------------------------------------------------------- enrollment */
+
+/* The one accent-washed surface in the system. It marks the single primary
+   action on a page and is never used for reading material. */
+.enrollmentPanel {
+  align-items: center;
+  background: var(--signal-wash);
+  border: 1px solid var(--signal-edge);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(240px, 1fr) minmax(300px, 1fr);
+  margin-bottom: 16px;
+  padding: 22px;
+}
+
+.enrollmentPanel .eyebrow {
+  color: var(--signal);
+}
+
+.enrollmentPanel h2 {
+  margin-bottom: 8px;
+}
+
+.enrollmentPanel > div > p:not([class]) {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 46ch;
 }
 
 .enrollmentPanel form {
   min-width: 0;
-}
-
-.enrollmentPanel label {
-  color: #b7bcb0;
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  margin-bottom: 7px;
-}
-
-.inputRow {
-  display: flex;
-  gap: 7px;
-}
-
-.inputRow input {
-  background: #292d25;
-  border: 1px solid #464b41;
-  border-radius: 7px;
-  color: var(--ink);
-  flex: 1;
-  font: 12px monospace;
-  min-width: 0;
-  outline: none;
-  padding: 12px;
-}
-
-.inputRow input:focus {
-  border-color: var(--lime);
-}
-
-.inputRow button {
-  background: var(--lime);
-  border: 0;
-  border-radius: 7px;
-  color: var(--on-accent);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 0 15px;
-}
-
-.inputRow button:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.formError {
-  color: #ff9674;
-  font-size: 11px;
-  margin: 8px 0 0;
 }
 
 .enrollmentPanel output {
@@ -479,287 +925,58 @@ h1 {
 }
 
 .enrollmentPanel output span {
-  color: #b7bcb0;
+  color: var(--faint);
   display: block;
-  font-size: 9px;
-  margin-bottom: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
   text-transform: uppercase;
 }
 
 .enrollmentPanel output code {
-  background: #292d25;
-  border-radius: 6px;
-  display: block;
-  font-size: 10px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  padding: 10px;
-}
-
-.panelHeading {
-  align-items: center;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  justify-content: space-between;
-  padding: 24px 26px 20px;
-}
-
-.panelHeading .eyebrow {
-  margin-bottom: 8px;
-}
-
-h2 {
-  font-size: 23px;
-  letter-spacing: -0.045em;
-  margin-bottom: 0;
-}
-
-.count {
-  color: var(--muted);
-  font-family: monospace;
-  font-size: 10px;
-}
-
-.empty {
-  align-items: center;
-  display: flex;
-  gap: 20px;
-  min-height: 190px;
-  padding: 34px;
-}
-
-.emptyIcon {
-  align-items: center;
-  background: var(--lime);
-  border-radius: 50%;
-  color: var(--on-accent);
-  display: flex;
-  flex: 0 0 auto;
-  font-size: 25px;
-  height: 54px;
-  justify-content: center;
-  width: 54px;
-}
-
-.empty h3 {
-  font-size: 16px;
-  margin-bottom: 7px;
-}
-
-.empty p,
-.quiet {
-  color: var(--muted);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0;
-  max-width: 500px;
-}
-
-.deviceTable article {
-  align-items: center;
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  gap: 15px;
-  grid-template-columns: 16px minmax(180px, 1fr) auto auto;
-  padding: 17px 26px;
-}
-
-.deviceTable article:last-child {
-  border-bottom: 0;
-}
-
-.nodeIcon {
-  background: #58a06c;
-  border-radius: 50%;
-  height: 8px;
-  width: 8px;
-}
-
-.deviceTable strong {
-  font-size: 13px;
-}
-
-.deviceTable p,
-.lastSeen {
-  color: var(--muted);
-  font-size: 10px;
-  margin: 3px 0 0;
-}
-
-.deviceTable code {
-  background: #202a25;
-  border-radius: 5px;
-  font-size: 10px;
-  padding: 6px 8px;
-}
-
-.activity {
-  margin-top: 14px;
-}
-
-.activity ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.activity li {
-  align-items: center;
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  gap: 14px;
-  grid-template-columns: 8px 1fr auto;
-  padding: 15px 26px;
-}
-
-.activity li > span {
-  background: var(--orange);
-  border-radius: 50%;
-  height: 6px;
-  width: 6px;
-}
-
-.activity li strong {
-  font-size: 12px;
-}
-
-.activity li p,
-.activity time {
-  color: var(--muted);
-  font-size: 10px;
-  margin: 3px 0 0;
-}
-
-.quiet {
-  padding: 28px;
-}
-
-@media (max-width: 800px) {
-  .topbar {
-    height: 64px;
-    padding: 0 18px;
-  }
-
-  .systemBadge {
-    font-size: 0;
-    padding: 9px;
-  }
-
-  .shell {
-    display: block;
-  }
-
-  aside {
-    border-bottom: 1px solid var(--line);
-    border-right: 0;
-    padding: 14px 18px;
-  }
-
-  aside > .eyebrow,
-  .storageCard {
-    display: none;
-  }
-
-  nav {
-    display: flex;
-    overflow-x: auto;
-  }
-
-  nav a {
-    flex: 0 0 auto;
-  }
-
-  .content {
-    padding: 38px 18px 60px;
-  }
-
-  .hero {
-    gap: 18px;
-    margin-bottom: 30px;
-  }
-
-  h1 {
-    font-size: 46px;
-  }
-
-  .metrics {
-    grid-template-columns: 1fr;
-  }
-
-  .enrollmentPanel {
-    grid-template-columns: 1fr;
-  }
-
-  .inputRow {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .inputRow button {
-    min-height: 42px;
-  }
-
-  .metrics article {
-    min-height: 145px;
-  }
-
-  .metrics strong {
-    margin-top: 20px;
-  }
-
-  .deviceTable article {
-    grid-template-columns: 12px 1fr auto;
-  }
-
-  .lastSeen {
-    display: none;
-  }
-}
-
-/* ---------------------------------------------------------- usage analytics */
-
-.usagePanel {
-  background: var(--green);
+  background: var(--sunken);
   border: 1px solid var(--line);
-  border-radius: 13px;
-  color: var(--ink);
-  margin-top: 14px;
-  padding: 28px;
-  scroll-margin-top: 88px;
+  border-radius: var(--radius-sm);
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
 }
+
+/* ------------------------------------------------------------------- usage */
 
 .usageTop {
-  align-items: end;
+  align-items: flex-start;
   display: flex;
   gap: 20px;
   justify-content: space-between;
   margin-bottom: 22px;
 }
 
-.usageTop .eyebrow {
-  color: var(--lime);
-  margin-bottom: 6px;
-}
-
 .usageTop h2 {
   margin: 0;
 }
 
-.rangeTabs {
+.rangeTabs,
+.segmented {
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: 999px;
   display: flex;
   gap: 2px;
-  background: #232720;
-  border-radius: 999px;
   padding: 3px;
 }
 
 .rangeTabs a {
   border-radius: 999px;
-  color: #b7bcb0;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px 13px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 12px;
+  transition: background 130ms ease, color 130ms ease;
 }
 
 .rangeTabs a:hover {
@@ -767,43 +984,69 @@ h2 {
 }
 
 .rangeTabs a.active {
-  background: #3a3f36;
-  color: var(--ink);
+  background: var(--raised);
+  color: var(--signal);
+}
+
+.segmented {
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.segmented button {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 5px 9px;
+  text-transform: uppercase;
+  transition: background 130ms ease, color 130ms ease;
+}
+
+.segmented button.on {
+  background: var(--raised);
+  color: var(--signal);
 }
 
 .usageGrid {
   display: grid;
   gap: 32px;
-  grid-template-columns: minmax(230px, 0.62fr) minmax(340px, 1.38fr);
+  grid-template-columns: minmax(220px, 0.6fr) minmax(340px, 1.4fr);
 }
 
 .tileLabel {
-  color: #b7bcb0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  margin: 0 0 6px;
-  text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .costHero {
   display: block;
-  font-size: 52px;
-  font-weight: 800;
-  letter-spacing: -0.05em;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
   line-height: 1;
 }
 
+/* The footnote marker rides as a superscript rather than a full-size glyph,
+   which at 40px mono would read as part of the figure. */
+.costHero span {
+  color: var(--faint);
+  font-size: 18px;
+  vertical-align: super;
+}
+
 .costHeroNote {
-  color: #8c9285;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 12px;
-  margin: 9px 0 26px;
+  color: var(--faint);
+  font-size: 11px;
+  margin: 10px 0 24px;
 }
 
 .providerList {
   display: grid;
-  gap: 20px;
+  gap: 18px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -812,31 +1055,30 @@ h2 {
 .providerHead {
   align-items: center;
   display: flex;
-  gap: 9px;
-  margin-bottom: 9px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .swatch {
-  border-radius: 3px;
+  border-radius: 2px;
   display: inline-block;
   flex: none;
-  height: 10px;
-  width: 10px;
+  height: 9px;
+  width: 9px;
 }
 
 .providerName {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 550;
 }
 
 .providerCost {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
   margin-left: auto;
 }
 
 .shareTrack {
-  background: #2c312a;
+  background: var(--sunken);
   border-radius: 999px;
   display: flex;
   height: 4px;
@@ -848,8 +1090,8 @@ h2 {
 }
 
 .providerNote {
-  color: #8c9285;
-  font-size: 12px;
+  color: var(--faint);
+  font-size: 11px;
   margin: 8px 0 0;
 }
 
@@ -864,12 +1106,12 @@ h2 {
   flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .chartTitle {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .chartControls {
@@ -879,36 +1121,10 @@ h2 {
   gap: 14px;
 }
 
-.segmented {
-  background: #232720;
-  border-radius: 7px;
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-}
-
-.segmented button {
-  background: transparent;
-  border: 0;
-  border-radius: 5px;
-  color: #b7bcb0;
-  cursor: pointer;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  padding: 5px 9px;
-  text-transform: uppercase;
-}
-
-.segmented button.on {
-  background: #3a3f36;
-  color: var(--ink);
-}
-
 .legend {
-  color: #b7bcb0;
+  color: var(--muted);
   display: flex;
-  font-size: 12px;
+  font-size: 11px;
   gap: 14px;
 }
 
@@ -925,41 +1141,42 @@ h2 {
 }
 
 .gridline {
-  stroke: #2c312a;
+  stroke: var(--line);
   stroke-width: 1;
 }
 
 .axisText {
-  fill: #8c9285;
-  font-family: Arial, Helvetica, sans-serif;
+  fill: var(--faint);
   font-size: 10px;
 }
 
-/* The hover dot is separated from the series line by a ring of the surface it
+/* The hover dot is separated from its series line by a ring of the surface it
    sits on, so it tracks the panel background rather than a fixed colour. */
 .markHalo {
-  stroke: var(--green);
+  stroke: var(--surface);
 }
 
 .crosshair {
-  stroke: #6c7266;
+  stroke: var(--line-strong);
   stroke-dasharray: 3 3;
   stroke-width: 1;
 }
 
 .tooltip {
   align-items: center;
-  color: #b7bcb0;
+  color: var(--muted);
   display: flex;
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 11px;
   gap: 6px 16px;
   margin-top: 10px;
   min-height: 18px;
 }
 
-.tooltip strong {
+.tooltip strong,
+.tooltip b {
   color: var(--ink);
+  font-weight: 500;
 }
 
 .tooltip > span {
@@ -968,28 +1185,23 @@ h2 {
   gap: 6px;
 }
 
-.tooltip b {
-  color: var(--ink);
-}
-
 .chartHint {
-  color: #6c7266;
-  font-size: 12px;
+  color: var(--faint);
+  font-size: 11px;
   margin: 10px 0 0;
   min-height: 18px;
 }
 
 .tileRow {
-  border-top: 1px solid #2c312a;
+  border-top: 1px solid var(--line);
   display: grid;
-  gap: 1px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin-top: 28px;
+  margin-top: 26px;
 }
 
 .tileRow article {
-  border-right: 1px solid #2c312a;
-  padding: 20px 20px 4px 0;
+  border-right: 1px solid var(--line-soft);
+  padding: 18px 18px 4px 0;
 }
 
 .tileRow article:last-child {
@@ -997,27 +1209,30 @@ h2 {
 }
 
 .tileRow article:not(:first-child) {
-  padding-left: 20px;
+  padding-left: 18px;
 }
 
 .tileRow strong {
   display: block;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .tileRow span {
-  color: #8c9285;
+  color: var(--faint);
   display: block;
-  font-size: 12px;
-  margin-top: 7px;
+  font-size: 11px;
+  margin-top: 6px;
 }
 
+/* -------------------------------------------------------------- data tables */
+
 .breakdown {
-  border-top: 1px solid #2c312a;
+  border-top: 1px solid var(--line);
   margin-top: 24px;
-  padding-top: 22px;
+  overflow-x: auto;
+  padding-top: 20px;
 }
 
 .breakdownHead {
@@ -1025,103 +1240,99 @@ h2 {
   display: flex;
   gap: 14px;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.breakdownHead .tileLabel {
+  margin-bottom: 0;
 }
 
 .breakdown table {
   border-collapse: collapse;
   font-size: 13px;
+  min-width: 640px;
   width: 100%;
 }
 
 .breakdown th,
 .breakdown td {
-  padding: 12px 8px;
+  padding: 11px 10px;
   text-align: left;
+  vertical-align: middle;
 }
 
 .breakdown thead th {
-  border-bottom: 1px solid #2c312a;
-  color: #8c9285;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+  margin: 0;
+  padding-bottom: 9px;
 }
 
+/* The row header stays a normal table cell. Laying it out as a flex container
+   pulled its content to the top of the row while every sibling cell stayed
+   vertically centred, which is what knocked the model names out of line with
+   their own figures. */
 .breakdown tbody th {
-  align-items: center;
-  display: flex;
-  font-weight: 600;
-  gap: 9px;
+  font-weight: 550;
+}
+
+.breakdown tbody th .swatch {
+  margin-right: 9px;
+}
+
+.breakdown tbody th .unpriced {
+  margin-left: 9px;
 }
 
 .breakdown tbody tr:not(:last-child) th,
 .breakdown tbody tr:not(:last-child) td {
-  border-bottom: 1px solid #232720;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.breakdown tbody tr:hover th,
+.breakdown tbody tr:hover td {
+  background: var(--raised);
 }
 
 .breakdown .num {
-  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
+.breakdown td {
+  color: var(--muted);
+}
+
 .breakdown .unpriced {
-  background: #2c312a;
+  background: var(--raised);
+  border: 1px solid var(--line-strong);
   border-radius: 4px;
-  color: #b7bcb0;
-  font-size: 10px;
+  color: var(--attention);
+  font-family: var(--mono);
+  font-size: 9px;
   font-style: normal;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   padding: 2px 6px;
   text-transform: uppercase;
 }
 
-.breakdown .quiet {
-  color: #8c9285;
-  font-size: 12px;
-  margin: 14px 0 0;
+.catalogPanel .breakdown table a,
+.linkButton {
+  background: none;
+  border: 0;
+  color: var(--signal);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-@media (max-width: 1080px) {
-  .usageGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .tileRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .tileRow article {
-    border-bottom: 1px solid #2c312a;
-  }
-}
-
-/* ------------------------------------------------- storage and catalog */
-
-.storagePanel,
-.catalogPanel {
-  background: var(--green);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  color: var(--ink);
-  margin-top: 14px;
-  padding: 28px;
-  scroll-margin-top: 88px;
-}
+/* -------------------------------------------------------- storage & catalog */
 
 .storagePanel {
   align-items: start;
   display: grid;
-  gap: 36px;
-  grid-template-columns: minmax(230px, 0.9fr) minmax(340px, 1.1fr);
-}
-
-.storagePanel .eyebrow,
-.catalogPanel .eyebrow {
-  color: var(--lime);
-  margin-bottom: 8px;
+  gap: 32px;
+  grid-template-columns: minmax(240px, 1fr) minmax(320px, 1fr);
 }
 
 .storagePanel h2,
@@ -1129,978 +1340,129 @@ h2 {
   margin: 0 0 10px;
 }
 
-.storagePanel > div > p {
-  color: #b7bcb0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
-  line-height: 1.55;
+/* Matched on the unclassed paragraph only. A bare `> div > p` outranks
+   `.formError` on specificity and would quietly render an error message in
+   body-text grey. */
+.storagePanel > div > p:not([class]) {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
   margin: 0;
+  max-width: 54ch;
 }
 
 .storagePanel code {
-  background: #292d25;
+  background: var(--raised);
   border-radius: 4px;
+  color: var(--ink);
+  font-family: var(--mono);
   font-size: 11px;
-  padding: 1px 5px;
+  padding: 1px 4px;
 }
 
 .storageFacts {
   display: flex;
   flex-wrap: wrap;
-  gap: 22px;
-  margin: 18px 0 0;
+  gap: 14px 36px;
+  margin: 20px 0 0;
 }
 
 .storageFacts dt {
-  color: #8c9285;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
+  margin-bottom: 5px;
 }
 
 .storageFacts dd {
-  font-size: 13px;
-  font-weight: 600;
-  margin: 4px 0 0;
+  font-size: 12px;
+  margin: 0;
 }
 
 .storageDetail {
-  color: #8c9285;
+  color: var(--faint);
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 12px 0 0;
   overflow-wrap: anywhere;
 }
 
 .storagePanel label {
-  color: #b7bcb0;
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  margin: 14px 0 7px;
+  margin: 14px 0 6px;
 }
 
-.storagePanel label:first-child {
+.storagePanel form > label:first-child {
   margin-top: 0;
 }
 
-.buttonRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 18px;
-}
-
-.buttonRow button,
-.catalogTop button {
-  background: var(--lime);
-  border: 0;
-  border-radius: 7px;
-  color: var(--on-accent);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 11px 15px;
-}
-
-.buttonRow button.ghost,
-.catalogPanel button.ghost {
-  background: transparent;
-  border: 1px solid #464b41;
-  color: #d7dad2;
-}
-
-.buttonRow button.ghost:hover:not(:disabled),
-.catalogPanel button.ghost:hover:not(:disabled) {
-  border-color: #6d7466;
-  color: var(--ink);
-}
-
-.buttonRow button.danger,
-.catalogPanel button.danger {
-  color: #ff9674;
-}
-
-.catalogPanel button.small {
-  font-size: 10px;
-  margin-left: 6px;
-  padding: 6px 10px;
-}
-
-.buttonRow button:disabled,
-.catalogPanel button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.formNotice {
-  color: var(--lime);
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 10px 0 0;
-}
-
 .catalogTop {
-  align-items: start;
+  align-items: flex-start;
   display: flex;
   gap: 20px;
   justify-content: space-between;
 }
 
 .catalogLede {
-  color: #b7bcb0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 62ch;
-}
-
-.catalogPanel .breakdown table a {
-  color: var(--lime);
-  text-decoration: underline;
-}
-
-.catalogPanel .quiet {
-  color: #8c9285;
+  color: var(--muted);
   font-size: 12px;
-  margin: 14px 0 0;
-}
-
-.linkButton {
-  background: none;
-  border: 0;
-  color: var(--lime);
-  cursor: pointer;
-  font: inherit;
-  padding: 0;
-  text-decoration: underline;
+  line-height: 1.65;
+  margin: 12px 0 0;
+  max-width: 74ch;
 }
 
 .priceForm {
-  border: 1px solid #2c312a;
-  border-radius: 10px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   margin-top: 18px;
   padding: 20px;
 }
 
 .priceHint {
-  color: #8c9285;
+  color: var(--faint);
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 6px 0 0;
-  max-width: 62ch;
+  max-width: 70ch;
 }
 
 .priceGrid {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .priceGrid label {
   display: block;
+  margin-bottom: 0;
 }
 
 .priceGrid span {
-  color: #b7bcb0;
+  color: var(--muted);
   display: block;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
   margin-bottom: 6px;
 }
 
-.priceGrid input,
-.storagePanel .inputRow input {
-  background: #292d25;
-  border: 1px solid #464b41;
-  border-radius: 7px;
-  color: var(--ink);
-  font: 12px monospace;
-  outline: none;
-  padding: 11px;
-  width: 100%;
+.priceGrid input {
+  background: var(--base);
 }
 
-.priceGrid input:focus,
-.storagePanel .inputRow input:focus {
-  border-color: var(--lime);
-}
-
-@media (max-width: 1080px) {
-  .storagePanel {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .catalogTop {
-    flex-direction: column;
-  }
-}
-
-/* ------------------------------------------------------ routed app shell */
-
-/* The shipped palette: this block wins over the legacy one above, so it carries
-   the authoritative dark values. --green keeps its role as the raised surface
-   under the feature panels — it reads as a lifted teal against --paper rather
-   than the near-black slab it was on light. --soft-green flips from a pale chip
-   to a dark one, so the pills that print --green on it need --soft-green-ink
-   instead. */
-:root {
-  --ink: #e8ece7;
-  --muted: #8e988f;
-  --paper: #0b100e;
-  --panel: #131a17;
-  --line: #253029;
-  --lime: #d7ff68;
-  --green: #173f35;
-  --orange: #ff6b46;
-  --soft-green: #1b352e;
-  --soft-green-ink: #8ed3b0;
-}
-
-body {
-  background: var(--paper);
-  min-width: 320px;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
-
-.appShell {
-  min-height: 100vh;
-}
-
-.appHeader {
-  align-items: center;
-  background: rgb(11 16 14 / 92%);
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  height: 76px;
-  justify-content: space-between;
-  padding: 0 clamp(20px, 3.2vw, 50px);
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  backdrop-filter: blur(18px);
-}
-
-.appHeader .brand {
-  gap: 10px;
-}
-
-.appHeader .brand > span:nth-child(2) {
-  font-size: 21px;
-}
-
-.appHeader .brand em {
-  border-left: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  margin-left: 4px;
-  padding-left: 14px;
-  text-transform: uppercase;
-}
-
-.headerStatus {
-  align-items: center;
-  display: flex;
-  font-size: 11px;
-  font-weight: 700;
-  gap: 9px;
-}
-
-.statusDot,
-.signal {
-  background: #43a46b;
-  border-radius: 999px;
-  box-shadow: 0 0 0 4px rgb(67 164 107 / 13%);
-  display: inline-block;
-  height: 7px;
-  width: 7px;
-}
-
-.headerStatus .signOut {
-  margin-left: 10px;
-}
-
-.appBody {
-  display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
-  margin: 0 auto;
-  max-width: 1600px;
-  min-height: calc(100vh - 76px);
-}
-
-.sidebar {
-  border-right: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 44px 25px 30px;
-}
-
-.navLabel {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  margin: 0 0 13px 12px;
-  text-transform: uppercase;
-}
-
-.desktopNav {
-  display: grid;
-  gap: 5px;
-}
-
-.desktopNav a {
-  border: 1px solid transparent;
-  border-radius: 9px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-  padding: 11px 12px;
-  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
-}
-
-.desktopNav a span {
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.65;
-  width: 18px;
-}
-
-.desktopNav a:hover {
-  background: var(--panel);
-  color: var(--ink);
-  transform: translateX(2px);
-}
-
-/* The active fill barely separated from the rail once both went dark, so the
-   item is outlined as well as filled. */
-.desktopNav a.active {
-  background: var(--green);
-  border-color: #2f5c4f;
-  box-shadow: 0 8px 22px rgb(0 0 0 / 38%);
-  color: var(--ink);
-}
-
-.controllerCard {
-  background: var(--green);
-  border-radius: 11px;
-  color: var(--ink);
-  padding: 18px;
-}
-
-.controllerCardKicker {
-  color: #a7baae;
-  display: block;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.controllerCard strong {
-  display: block;
-  font-size: 15px;
-  letter-spacing: -0.03em;
-  margin-top: 8px;
-  text-transform: capitalize;
-}
-
-.controllerCard p,
-.controllerCard small {
-  color: #a7baae;
-  font-size: 9px;
-  margin: 4px 0 0;
-}
-
-.controllerCard > div {
-  background: #315e51;
-  border-radius: 999px;
-  height: 3px;
-  margin: 16px 0 10px;
-  overflow: hidden;
-}
-
-.controllerCard > div span {
-  background: var(--lime);
-  display: block;
-  height: 100%;
-  width: 73%;
-}
-
-.pageFrame {
-  min-width: 0;
-  padding: 58px clamp(28px, 5vw, 78px) 90px;
-}
-
-.routePage {
-  margin: 0 auto;
-  max-width: 1180px;
-}
-
-.routeHero {
-  align-items: flex-start;
-  display: flex;
-  gap: 36px;
-  justify-content: space-between;
-  margin-bottom: 42px;
-}
-
-.routeHero .eyebrow > span {
-  background: var(--orange);
-  border-radius: 50%;
-  display: inline-block;
-  height: 6px;
-  margin-right: 7px;
-  width: 6px;
-}
-
-.routeHero h1 {
-  font-size: clamp(48px, 6.2vw, 84px);
-  letter-spacing: -0.085em;
-  line-height: 0.88;
-  margin-bottom: 26px;
-  max-width: 850px;
-}
-
-/* The accent phrase was the deep green against paper; that colour is now a
-   surface, so the emphasis carries on the light green instead. */
-.routeHero h1 em {
-  color: var(--soft-green-ink);
-  font-family: Georgia, "Times New Roman", serif;
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.07em;
-}
-
-.routeHero .lede {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 15px;
-  line-height: 1.65;
-  margin-bottom: 0;
-  max-width: 590px;
-}
-
-.version {
-  background: var(--lime);
-  border: 1px solid rgb(23 32 28 / 12%);
-  flex: 0 0 auto;
-  letter-spacing: 0.03em;
-}
-
-.metricStrip {
-  border-bottom: 1px solid var(--line);
-  border-top: 1px solid var(--line);
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
-  margin-bottom: 18px;
-}
-
-.metricStrip article {
-  border-right: 1px solid var(--line);
-  min-height: 176px;
-  padding: 22px clamp(16px, 2.2vw, 28px) 20px 0;
-}
-
-.metricStrip article:not(:first-child) {
-  padding-left: clamp(16px, 2.2vw, 28px);
-}
-
-.metricStrip article:last-child {
-  border-right: 0;
-}
-
-.metricIndex {
-  color: var(--muted);
-  display: block;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.metricStrip strong {
-  display: block;
-  font-size: clamp(48px, 5vw, 68px);
-  letter-spacing: -0.08em;
-  line-height: 1;
-  margin: 31px 0 11px;
-}
-
-.metricStrip .statusWord {
-  font-size: clamp(34px, 4vw, 51px);
-  text-transform: uppercase;
-}
-
-.metricStrip p {
-  align-items: center;
-  color: var(--muted);
-  display: flex;
-  font-size: 10px;
-  gap: 8px;
-  margin: 0;
-}
-
-.signal {
-  box-shadow: none;
-  height: 6px;
-  width: 6px;
-}
-
-.signal.warm {
-  background: var(--orange);
-}
-
-.overviewPage .enrollmentPanel {
-  border: 1px solid rgb(255 255 255 / 8%);
-  box-shadow: 0 18px 45px rgb(0 0 0 / 42%);
-  margin: 18px 0;
-}
-
-.overviewGrid {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.overviewCard {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.overviewCard > header {
-  align-items: flex-start;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  justify-content: space-between;
-  padding: 24px;
-}
-
-.overviewCard > header .eyebrow {
-  margin-bottom: 7px;
-}
-
-.arrowLink {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.arrowLink span {
-  color: var(--orange);
-  font-size: 14px;
-  margin-left: 4px;
-}
-
-.compactEmpty {
-  align-items: center;
-  display: flex;
-  gap: 15px;
-  min-height: 142px;
-  padding: 26px;
-}
-
-.compactEmpty > span {
-  align-items: center;
-  background: var(--lime);
-  border-radius: 50%;
-  display: flex;
-  flex: 0 0 auto;
-  font-size: 20px;
-  height: 42px;
-  justify-content: center;
-  width: 42px;
-}
-
-.compactEmpty strong {
-  font-size: 13px;
-}
-
-.compactEmpty p {
-  color: var(--muted);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 12px;
-  line-height: 1.45;
-  margin: 5px 0 0;
-}
-
-.overviewList,
-.activityPreview {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.overviewList li,
-.activityPreview li {
-  align-items: center;
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  gap: 12px;
-  grid-template-columns: auto 1fr auto;
-  padding: 15px 24px;
-}
-
-.overviewList li:last-child,
-.activityPreview li:last-child {
-  border-bottom: 0;
-}
-
-.nodeAvatar {
-  align-items: center;
-  background: var(--soft-green);
-  border-radius: 8px;
-  display: flex;
-  font-size: 9px;
-  font-weight: 800;
-  height: 34px;
-  justify-content: center;
-  width: 34px;
-}
-
-.overviewList strong,
-.activityPreview strong {
-  font-size: 11px;
-}
-
-.overviewList p,
-.activityPreview p,
-.overviewList time,
-.activityPreview time {
-  color: var(--muted);
-  font-size: 9px;
-  margin: 3px 0 0;
-}
-
-.darkCard {
-  background: var(--green);
-  border-color: var(--green);
-  color: var(--ink);
-}
-
-.darkCard > header,
-.darkCard .activityPreview li {
-  border-color: #315e51;
-}
-
-.darkCard .eyebrow,
-.darkCard .arrowLink,
-.darkCard .activityPreview p,
-.darkCard .activityPreview time {
-  color: #a7baae;
-}
-
-.activityPreview li > span {
-  background: var(--orange);
-  border-radius: 50%;
-  height: 7px;
-  width: 7px;
-}
-
-.mobileNav {
-  display: none;
-}
-
-@media (max-width: 980px) {
-  .appBody {
-    display: block;
-  }
-
-  .sidebar {
-    display: none;
-  }
-
-  .pageFrame {
-    padding: 44px 28px 108px;
-  }
-
-  .mobileNav {
-    background: rgb(23 32 28 / 94%);
-    bottom: 12px;
-    border: 1px solid rgb(255 255 255 / 10%);
-    border-radius: 13px;
-    box-shadow: 0 14px 35px rgb(0 0 0 / 55%);
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    left: 16px;
-    overflow: hidden;
-    padding: 6px;
-    position: fixed;
-    right: 16px;
-    z-index: 40;
-  }
-
-  .mobileNav a {
-    align-items: center;
-    border-radius: 8px;
-    color: #a7baae;
-    display: flex;
-    flex-direction: column;
-    font-size: 8px;
-    font-weight: 750;
-    gap: 3px;
-    min-width: 0;
-    padding: 7px 2px;
-  }
-
-  .mobileNav a span {
-    font-family: monospace;
-    font-size: 9px;
-  }
-
-  .mobileNav a.active {
-    background: var(--lime);
-    color: var(--on-accent);
-  }
-}
-
-@media (max-width: 700px) {
-  .appHeader {
-    height: 64px;
-    padding: 0 18px;
-  }
-
-  .appHeader .brand > span:nth-child(2) {
-    font-size: 19px;
-  }
-
-  .appHeader .brand em,
-  .headerStatus > span:not(.statusDot) {
-    display: none;
-  }
-
-  .headerStatus .signOut {
-    margin-left: 4px;
-    padding: 8px 11px;
-  }
-
-  .pageFrame {
-    padding: 35px 18px 105px;
-  }
-
-  .routeHero {
-    display: block;
-    margin-bottom: 30px;
-  }
-
-  .routeHero h1 {
-    font-size: clamp(45px, 14vw, 65px);
-    margin-bottom: 20px;
-  }
-
-  .routeHero .lede {
-    font-size: 13px;
-  }
-
-  .routeHero .version {
-    display: inline-block;
-    margin-top: 20px;
-  }
-
-  .metricStrip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .metricStrip .metricWide {
-    border-right: 0;
-    border-top: 1px solid var(--line);
-    grid-column: 1 / -1;
-    padding-left: 0;
-  }
-
-  .metricStrip article {
-    min-height: 145px;
-  }
-
-  .metricStrip strong {
-    font-size: 48px;
-    margin-top: 25px;
-  }
-
-  .metricStrip .statusWord {
-    font-size: 37px;
-  }
-
-  .overviewGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .overviewPage .enrollmentPanel {
-    margin: 14px 0;
-  }
-
-  .mobileNav {
-    bottom: 8px;
-    left: 8px;
-    right: 8px;
-  }
-}
-
-@media (max-width: 420px) {
-  .mobileNav a {
-    font-size: 7px;
-  }
-
-  .mobileNav a span {
-    font-size: 8px;
-  }
-
-  .overviewCard > header,
-  .overviewList li,
-  .activityPreview li {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-}
-
-/* ------------------------------------------------------ dedicated routes */
-
-.compactHero {
-  align-items: flex-end;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 42px;
-}
-
-.compactHero h1 {
-  font-size: clamp(46px, 5.4vw, 72px);
-}
-
-.compactHero .lede {
-  max-width: 620px;
-}
-
-.routeCount {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  flex: 0 0 auto;
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: 700;
-  margin-bottom: 4px;
-  padding: 9px 12px;
-  text-transform: uppercase;
-}
-
-.routePage > .usagePanel,
-.routePage > .storagePanel,
-.routePage > .catalogPanel,
-.routePage > .enrollmentPanel {
-  margin-top: 0;
-}
-
-.routePage > .usagePanel,
-.routePage > .storagePanel,
-.routePage > .catalogPanel {
-  box-shadow: 0 18px 48px rgb(0 0 0 / 42%);
-}
-
-.usagePanel,
-.storagePanel,
-.catalogPanel,
-.enrollmentPanel {
-  background: var(--green);
-}
-
-.usagePanel,
-.storagePanel,
-.catalogPanel {
-  border: 1px solid rgb(255 255 255 / 7%);
-}
-
-.breakdown {
-  overflow-x: auto;
-}
-
-.breakdown table {
-  min-width: 650px;
-}
+/* ----------------------------------------------------------------- devices */
 
 .deviceDirectory,
 .activityLog {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  margin-top: 18px;
-  overflow: hidden;
-}
-
-.deviceDirectory > header,
-.activityLog > header {
-  align-items: flex-start;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  justify-content: space-between;
-  padding: 25px 28px;
-}
-
-.deviceDirectory > header .eyebrow,
-.activityLog > header .eyebrow {
-  margin-bottom: 7px;
+  margin-top: 16px;
 }
 
 .deviceDirectory > header > span {
-  background: var(--soft-green);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--soft-green-ink);
-  font-size: 9px;
-  font-weight: 800;
-  padding: 7px 10px;
-  text-transform: uppercase;
-}
-
-.largeEmpty {
-  align-items: center;
-  display: flex;
-  gap: 22px;
-  min-height: 210px;
-  padding: 36px;
-}
-
-.largeEmpty > span {
-  align-items: center;
-  background: var(--lime);
-  border-radius: 50%;
-  display: flex;
-  flex: 0 0 auto;
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 800;
-  height: 60px;
-  justify-content: center;
-  width: 60px;
-}
-
-.largeEmpty h3 {
-  font-size: 17px;
-  margin-bottom: 8px;
-}
-
-.largeEmpty p {
   color: var(--muted);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 540px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .deviceGrid {
@@ -2109,10 +1471,10 @@ a {
 }
 
 .deviceGrid article {
-  border-bottom: 1px solid var(--line);
-  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
   min-width: 0;
-  padding: 24px;
+  padding: 20px 22px;
 }
 
 .deviceGrid article:nth-child(3n) {
@@ -2123,59 +1485,49 @@ a {
   align-items: center;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .deviceGrid article h3 {
-  font-size: 18px;
-  letter-spacing: -0.04em;
-  margin-bottom: 5px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 3px;
   overflow-wrap: anywhere;
 }
 
 .deviceGrid article > p {
-  color: var(--muted);
-  font-size: 10px;
-  margin-bottom: 24px;
+  color: var(--faint);
+  font-size: 11px;
+  margin-bottom: 18px;
 }
 
 .onlinePill,
 .offlinePill {
   align-items: center;
-  background: var(--soft-green);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--soft-green-ink);
+  color: var(--muted);
   display: flex;
-  font-size: 8px;
-  font-weight: 800;
-  gap: 5px;
-  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  gap: 6px;
+  letter-spacing: 0.08em;
+  padding: 5px 9px;
   text-transform: uppercase;
 }
 
-.onlinePill i,
-.offlinePill i {
-  background: #43a46b;
-  border-radius: 50%;
-  height: 5px;
-  width: 5px;
-}
-
-.offlinePill {
-  background: #232b27;
-  color: var(--muted);
-}
-
-.offlinePill i {
-  background: #6f7a72;
+.onlinePill {
+  border-color: rgb(90 214 160 / 30%);
+  color: var(--ok);
 }
 
 .deviceGrid dl {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line-soft);
   display: grid;
-  gap: 8px;
+  gap: 7px;
   margin: 0;
-  padding-top: 15px;
+  padding-top: 14px;
 }
 
 .deviceGrid dl div {
@@ -2185,15 +1537,16 @@ a {
 }
 
 .deviceGrid dt {
-  color: var(--muted);
-  font-size: 9px;
+  color: var(--faint);
+  font-size: 11px;
 }
 
 .deviceGrid dd {
-  font-family: monospace;
-  font-size: 9px;
+  font-size: 11px;
   margin: 0;
 }
+
+/* ---------------------------------------------------------------- activity */
 
 .activityLog > header {
   display: block;
@@ -2207,50 +1560,196 @@ a {
 
 .activityLog li {
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-soft);
   display: grid;
   gap: 16px;
-  grid-template-columns: 28px 8px minmax(0, 1fr) auto;
-  padding: 17px 28px;
+  grid-template-columns: 28px 7px minmax(0, 1fr) auto;
+  padding: 14px 22px;
 }
 
 .activityLog li:last-child {
   border-bottom: 0;
 }
 
-.activityLog .eventNumber {
-  color: #a2a9a2;
-  font-family: monospace;
-  font-size: 9px;
+.activityLog li:hover {
+  background: var(--raised);
 }
 
-.activityLog li > i {
-  background: var(--orange);
-  border-radius: 50%;
-  height: 7px;
-  width: 7px;
+.eventNumber {
+  color: var(--faint);
+  font-size: 10px;
 }
 
-.activityLog strong {
+/* An audit entry is a record identifier, not prose, so the action and the
+   resource it touched are set as written rather than title-cased into
+   something the API never emitted. Scoped to `li` so these do not reach up and
+   restyle the panel's own header. */
+.activityLog li strong {
+  font-family: var(--mono);
   font-size: 12px;
-  text-transform: capitalize;
+  font-weight: 500;
 }
 
-.activityLog p,
+.activityLog li p,
 .activityLog time {
-  color: var(--muted);
-  font-size: 9px;
-  margin: 4px 0 0;
-  text-transform: capitalize;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  margin: 3px 0 0;
 }
 
-@media (max-width: 900px) {
+/* ------------------------------------------------------------------- login */
+
+.loginShell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.loginCard {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  max-width: 400px;
+  padding: 30px;
+  width: 100%;
+}
+
+.loginCard .brandMark {
+  height: 22px;
+  margin-bottom: 22px;
+  width: 24px;
+}
+
+.loginCard .brandMark i {
+  width: 5px;
+}
+
+.loginCard .brandMark i:nth-child(1) {
+  height: 11px;
+}
+
+.loginCard .brandMark i:nth-child(2) {
+  height: 22px;
+}
+
+.loginCard .brandMark i:nth-child(3) {
+  height: 16px;
+}
+
+.loginCard .eyebrow {
+  color: var(--signal);
+}
+
+.loginCard h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.loginCard .lede {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 22px;
+}
+
+/* --------------------------------------------------------------- responsive */
+
+.mobileNav {
+  display: none;
+}
+
+@media (max-width: 1080px) {
+  .usageGrid,
+  .storagePanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tileRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tileRow article {
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .catalogTop {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 980px) {
+  .appBody {
+    display: block;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .pageFrame {
+    padding: 28px 20px 96px;
+  }
+
+  .mobileNav {
+    background: rgb(21 25 32 / 96%);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    bottom: 12px;
+    box-shadow: 0 12px 30px rgb(0 0 0 / 50%);
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    left: 14px;
+    overflow: hidden;
+    padding: 5px;
+    position: fixed;
+    right: 14px;
+    z-index: 40;
+    backdrop-filter: blur(14px);
+  }
+
+  .mobileNav a {
+    align-items: center;
+    border-radius: 8px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    font-size: 10px;
+    gap: 4px;
+    justify-content: center;
+    min-width: 0;
+    padding: 8px 2px;
+  }
+
+  .mobileNav a i {
+    background: currentcolor;
+    border-radius: 50%;
+    height: 4px;
+    opacity: 0;
+    width: 4px;
+  }
+
+  .mobileNav a.active {
+    background: var(--raised);
+    color: var(--signal);
+  }
+
+  .mobileNav a.active i {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 860px) {
   .deviceGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .deviceGrid article:nth-child(3n) {
-    border-right: 1px solid var(--line);
+    border-right: 1px solid var(--line-soft);
   }
 
   .deviceGrid article:nth-child(2n) {
@@ -2258,26 +1757,65 @@ a {
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 760px) {
+  .appHeader {
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .appHeader .brand em,
+  .headerStatus > span:not(.statusDot),
+  .fleetDots {
+    display: none;
+  }
+
+  .fleetStrip {
+    justify-content: flex-start;
+  }
+
+  .routeHero,
   .compactHero {
-    padding-bottom: 30px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
   }
 
+  .routeHero h1,
   .compactHero h1 {
-    font-size: clamp(44px, 13vw, 61px);
+    font-size: 24px;
   }
 
-  .routeCount {
-    display: inline-block;
-    margin-top: 20px;
+  .metricStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metricStrip .metricWide {
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    grid-column: 1 / -1;
+  }
+
+  .metricStrip strong {
+    font-size: 32px;
+  }
+
+  .metricStrip .statusWord {
+    font-size: 24px;
+  }
+
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .enrollmentPanel {
+    grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   .usagePanel,
   .storagePanel,
-  .catalogPanel,
-  .enrollmentPanel {
-    border-radius: 11px;
-    padding: 22px;
+  .catalogPanel {
+    padding: 20px 18px;
   }
 
   .usageTop {
@@ -2293,6 +1831,14 @@ a {
   .chartControls {
     align-items: flex-start;
     flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Axis labels are SVG user units inside a fixed 720-unit viewBox, so on a
+     phone the whole plot is scaled to roughly 0.44 and a 10-unit label lands
+     around 4px on screen. Sized up here so it renders at its intended size. */
+  .axisText {
+    font-size: 22px;
   }
 
   .tileRow {
@@ -2302,7 +1848,7 @@ a {
   .tileRow article,
   .tileRow article:not(:first-child) {
     border-right: 0;
-    padding: 16px 0;
+    padding: 14px 0;
   }
 
   .storageFacts {
@@ -2320,23 +1866,34 @@ a {
     border-right: 0;
   }
 
+  .overviewCard > header,
+  .deviceDirectory > header,
+  .activityLog > header,
+  .overviewList li,
+  .activityPreview li,
+  .deviceGrid article {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
   .activityLog li {
     gap: 10px;
-    grid-template-columns: 22px 7px minmax(0, 1fr);
-    padding: 15px 18px;
+    grid-template-columns: 24px 7px minmax(0, 1fr);
+    padding: 13px 18px;
   }
 
   .activityLog time {
     display: none;
   }
 
-  .deviceDirectory > header,
-  .activityLog > header {
-    padding: 22px 20px;
-  }
-
   .largeEmpty {
     align-items: flex-start;
-    padding: 28px 22px;
+    padding: 26px 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobileNav a {
+    font-size: 9px;
   }
 }
