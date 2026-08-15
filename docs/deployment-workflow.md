@@ -47,7 +47,9 @@ Optional environment variables:
 
 The host's `/opt/relaydot/.env` is created during bootstrap and is never copied
 back to GitHub or replaced by the workflow. Keep `RELAYDOT_ADMIN_TOKEN` only in
-that owner-readable host file.
+that owner-readable host file. That file must also set `RELAYDOT_PUBLIC_URL` to
+the public controller URL; browser sign-in and every cookie-authenticated
+administrator request are restricted to that origin.
 
 ## Manual production deployment
 

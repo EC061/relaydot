@@ -67,10 +67,12 @@ relaydot.example.com {
 ```
 
 Only enroll nodes using the HTTPS origin. Preserve the original `Host` and
-forwarded-protocol headers; mainstream reverse proxies do this by default. The
-current controller does not implement browser login, so restrict dashboard
-network access to trusted administrators until UI authentication is implemented.
-Agent and administrator API credentials remain required for protected API calls.
+forwarded-protocol headers; mainstream reverse proxies do this by default. Set
+`RELAYDOT_PUBLIC_URL` to that HTTPS origin so the controller pins its origin
+check and the `Secure` cookie flag to a trusted value rather than the
+client-supplied `Host` header. The dashboard requires a session established at
+`/login`; agent and administrator API credentials remain required for protected
+API calls.
 
 ## Managed nodes
 
@@ -143,7 +145,10 @@ From a checkout:
 
 ```sh
 cp infra/compose/.env.example infra/compose/.env
-# Replace RELAYDOT_ADMIN_TOKEN.
+# Replace RELAYDOT_ADMIN_TOKEN, and set RELAYDOT_PUBLIC_URL to the URL browsers
+# use to reach this controller. Both are required; compose refuses to start
+# without them. Sign in at /login with the administrator token to reach the
+# dashboard.
 docker compose \
   --env-file infra/compose/.env \
   -f infra/compose/compose.yaml \
