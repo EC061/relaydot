@@ -27,13 +27,18 @@ jobs:
         run: pnpm lint:contracts
       - name: Deployment script checks
         run: pnpm check:deployment
+      # The Compose file marks these required with `:?`, so an operator cannot
+      # deploy without pinning the browser-facing origin. Validation therefore
+      # has to supply them the same way a real deployment does.
       - name: Production Compose configuration
         env:
           RELAYDOT_ADMIN_TOKEN: ci-validation-token
+          RELAYDOT_PUBLIC_URL: https://relaydot.ci.invalid
         run: docker compose -f infra/compose/compose.yaml config --quiet
       - name: Local-build Compose overlay
         env:
           RELAYDOT_ADMIN_TOKEN: ci-validation-token
+          RELAYDOT_PUBLIC_URL: https://relaydot.ci.invalid
         run: docker compose -f infra/compose/compose.yaml -f infra/compose/compose.build.yaml config --quiet
       - name: Type check
         run: pnpm lint:controller
