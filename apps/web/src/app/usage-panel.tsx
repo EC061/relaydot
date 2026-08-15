@@ -15,7 +15,7 @@ import type { ProviderKey, RangeKey, UsageSummary } from "@/lib/analytics";
 
 /**
  * Categorical slots 1 and 2 from the documented visualization palette, stepped
- * for a dark surface and validated against this panel's ink background
+ * for a dark surface and validated against this panel's --deep background
  * (lightness band, chroma floor, CVD separation, normal-vision floor, contrast).
  * Colour follows the provider, never its rank, so filtering never repaints.
  */
@@ -345,12 +345,12 @@ export function UsagePanel({ summary }: { summary: UsageSummary }) {
                 />
                 {bands.map((band) => (
                   <circle
+                    className="markHalo"
                     cx={chart.x(hover)}
                     cy={chart.y(band.upper[hover])}
                     fill={SERIES_COLOR[band.provider.key]}
                     key={band.provider.key}
                     r="4.5"
-                    stroke="#151811"
                     strokeWidth="2"
                   />
                 ))}

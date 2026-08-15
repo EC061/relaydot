@@ -1,12 +1,23 @@
 :root {
-  --ink: #151811;
-  --muted: #676d60;
-  --paper: #f3f1e9;
-  --panel: #fbfaf5;
-  --line: #d8d6cc;
-  --lime: #c7f04f;
-  --green: #294c36;
-  --orange: #e26d3f;
+  /* Dark theme. --ink is the reading colour and --paper the page behind it, so
+     the two swap roles from a light build, and --green stays the raised surface
+     the feature panels sit on. The routed shell below re-declares this palette;
+     both blocks are kept in step so the cascade order between them cannot
+     change what ships. */
+  color-scheme: dark;
+
+  --ink: #e8ece7;
+  --muted: #8e988f;
+  --paper: #0b100e;
+  --panel: #131a17;
+  --line: #253029;
+  --lime: #d7ff68;
+  --green: #173f35;
+  --orange: #ff6b46;
+
+  /* Only declared here, and read by both blocks: the dark text that rides on a
+     --lime fill, which is the one place a light theme's ink survives. */
+  --on-accent: #16201b;
 }
 
 * {
@@ -32,7 +43,7 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 73% 0%, rgb(199 240 79 / 12%), transparent 32rem),
+    radial-gradient(circle at 73% 0%, rgb(215 255 104 / 6%), transparent 32rem),
     var(--paper);
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
@@ -45,7 +56,7 @@ a {
 
 .topbar {
   align-items: center;
-  background: rgb(243 241 233 / 90%);
+  background: rgb(11 16 14 / 88%);
   border-bottom: 1px solid var(--line);
   display: flex;
   height: 72px;
@@ -141,9 +152,10 @@ a {
 }
 
 .loginCard {
-  background: var(--ink);
+  background: var(--green);
+  border: 1px solid var(--line);
   border-radius: 13px;
-  color: white;
+  color: var(--ink);
   max-width: 430px;
   padding: 34px;
   width: 100%;
@@ -238,10 +250,16 @@ nav a span {
   opacity: 0.65;
 }
 
-nav a.active,
 nav a:hover {
-  background: var(--ink);
-  color: white;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+/* Inverting the active item is what carried it on paper; on a dark rail the
+   accent fill is what separates it from a hover. */
+nav a.active {
+  background: var(--lime);
+  color: var(--on-accent);
 }
 
 .storageCard {
@@ -302,6 +320,7 @@ h1 {
 .version {
   background: var(--lime);
   border-radius: 999px;
+  color: var(--on-accent);
   font-family: monospace;
   font-size: 10px;
   font-weight: 700;
@@ -371,9 +390,10 @@ h1 {
 
 .enrollmentPanel {
   align-items: center;
-  background: var(--ink);
+  background: var(--green);
+  border: 1px solid var(--line);
   border-radius: 13px;
-  color: white;
+  color: var(--ink);
   display: grid;
   gap: 36px;
   grid-template-columns: minmax(230px, 0.75fr) minmax(340px, 1.25fr);
@@ -419,7 +439,7 @@ h1 {
   background: #292d25;
   border: 1px solid #464b41;
   border-radius: 7px;
-  color: white;
+  color: var(--ink);
   flex: 1;
   font: 12px monospace;
   min-width: 0;
@@ -435,7 +455,7 @@ h1 {
   background: var(--lime);
   border: 0;
   border-radius: 7px;
-  color: var(--ink);
+  color: var(--on-accent);
   cursor: pointer;
   font-size: 11px;
   font-weight: 800;
@@ -512,6 +532,7 @@ h2 {
   align-items: center;
   background: var(--lime);
   border-radius: 50%;
+  color: var(--on-accent);
   display: flex;
   flex: 0 0 auto;
   font-size: 25px;
@@ -567,7 +588,7 @@ h2 {
 }
 
 .deviceTable code {
-  background: #edebe2;
+  background: #202a25;
   border-radius: 5px;
   font-size: 10px;
   padding: 6px 8px;
@@ -699,9 +720,10 @@ h2 {
 /* ---------------------------------------------------------- usage analytics */
 
 .usagePanel {
-  background: var(--ink);
+  background: var(--green);
+  border: 1px solid var(--line);
   border-radius: 13px;
-  color: white;
+  color: var(--ink);
   margin-top: 14px;
   padding: 28px;
   scroll-margin-top: 88px;
@@ -741,12 +763,12 @@ h2 {
 }
 
 .rangeTabs a:hover {
-  color: white;
+  color: var(--ink);
 }
 
 .rangeTabs a.active {
   background: #3a3f36;
-  color: white;
+  color: var(--ink);
 }
 
 .usageGrid {
@@ -880,7 +902,7 @@ h2 {
 
 .segmented button.on {
   background: #3a3f36;
-  color: white;
+  color: var(--ink);
 }
 
 .legend {
@@ -913,6 +935,12 @@ h2 {
   font-size: 10px;
 }
 
+/* The hover dot is separated from the series line by a ring of the surface it
+   sits on, so it tracks the panel background rather than a fixed colour. */
+.markHalo {
+  stroke: var(--green);
+}
+
 .crosshair {
   stroke: #6c7266;
   stroke-dasharray: 3 3;
@@ -931,7 +959,7 @@ h2 {
 }
 
 .tooltip strong {
-  color: white;
+  color: var(--ink);
 }
 
 .tooltip > span {
@@ -941,7 +969,7 @@ h2 {
 }
 
 .tooltip b {
-  color: white;
+  color: var(--ink);
 }
 
 .chartHint {
@@ -1074,9 +1102,10 @@ h2 {
 
 .storagePanel,
 .catalogPanel {
-  background: var(--ink);
+  background: var(--green);
+  border: 1px solid var(--line);
   border-radius: 13px;
-  color: white;
+  color: var(--ink);
   margin-top: 14px;
   padding: 28px;
   scroll-margin-top: 88px;
@@ -1168,7 +1197,7 @@ h2 {
   background: var(--lime);
   border: 0;
   border-radius: 7px;
-  color: var(--ink);
+  color: var(--on-accent);
   cursor: pointer;
   font-size: 11px;
   font-weight: 800;
@@ -1185,7 +1214,7 @@ h2 {
 .buttonRow button.ghost:hover:not(:disabled),
 .catalogPanel button.ghost:hover:not(:disabled) {
   border-color: #6d7466;
-  color: white;
+  color: var(--ink);
 }
 
 .buttonRow button.danger,
@@ -1288,7 +1317,7 @@ h2 {
   background: #292d25;
   border: 1px solid #464b41;
   border-radius: 7px;
-  color: white;
+  color: var(--ink);
   font: 12px monospace;
   outline: none;
   padding: 11px;
@@ -1312,16 +1341,23 @@ h2 {
 
 /* ------------------------------------------------------ routed app shell */
 
+/* The shipped palette: this block wins over the legacy one above, so it carries
+   the authoritative dark values. --green keeps its role as the raised surface
+   under the feature panels — it reads as a lifted teal against --paper rather
+   than the near-black slab it was on light. --soft-green flips from a pale chip
+   to a dark one, so the pills that print --green on it need --soft-green-ink
+   instead. */
 :root {
-  --ink: #17201c;
-  --muted: #68736c;
-  --paper: #f4f2eb;
-  --panel: #fffdf8;
-  --line: #d9ddd4;
+  --ink: #e8ece7;
+  --muted: #8e988f;
+  --paper: #0b100e;
+  --panel: #131a17;
+  --line: #253029;
   --lime: #d7ff68;
   --green: #173f35;
   --orange: #ff6b46;
-  --soft-green: #dce9de;
+  --soft-green: #1b352e;
+  --soft-green-ink: #8ed3b0;
 }
 
 body {
@@ -1345,7 +1381,7 @@ a {
 
 .appHeader {
   align-items: center;
-  background: rgb(244 242 235 / 92%);
+  background: rgb(11 16 14 / 92%);
   border-bottom: 1px solid var(--line);
   display: flex;
   height: 76px;
@@ -1447,21 +1483,24 @@ a {
 }
 
 .desktopNav a:hover {
-  background: #eaece4;
+  background: var(--panel);
   color: var(--ink);
   transform: translateX(2px);
 }
 
+/* The active fill barely separated from the rail once both went dark, so the
+   item is outlined as well as filled. */
 .desktopNav a.active {
   background: var(--green);
-  box-shadow: 0 8px 22px rgb(23 63 53 / 14%);
-  color: white;
+  border-color: #2f5c4f;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 38%);
+  color: var(--ink);
 }
 
 .controllerCard {
   background: var(--green);
   border-radius: 11px;
-  color: white;
+  color: var(--ink);
   padding: 18px;
 }
 
@@ -1539,8 +1578,10 @@ a {
   max-width: 850px;
 }
 
+/* The accent phrase was the deep green against paper; that colour is now a
+   surface, so the emphasis carries on the light green instead. */
 .routeHero h1 em {
-  color: var(--green);
+  color: var(--soft-green-ink);
   font-family: Georgia, "Times New Roman", serif;
   font-style: italic;
   font-weight: 400;
@@ -1627,7 +1668,7 @@ a {
 
 .overviewPage .enrollmentPanel {
   border: 1px solid rgb(255 255 255 / 8%);
-  box-shadow: 0 18px 45px rgb(23 32 28 / 10%);
+  box-shadow: 0 18px 45px rgb(0 0 0 / 42%);
   margin: 18px 0;
 }
 
@@ -1752,7 +1793,7 @@ a {
 .darkCard {
   background: var(--green);
   border-color: var(--green);
-  color: white;
+  color: var(--ink);
 }
 
 .darkCard > header,
@@ -1796,7 +1837,7 @@ a {
     bottom: 12px;
     border: 1px solid rgb(255 255 255 / 10%);
     border-radius: 13px;
-    box-shadow: 0 14px 35px rgb(23 32 28 / 28%);
+    box-shadow: 0 14px 35px rgb(0 0 0 / 55%);
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     left: 16px;
@@ -1827,7 +1868,7 @@ a {
 
   .mobileNav a.active {
     background: var(--lime);
-    color: var(--ink);
+    color: var(--on-accent);
   }
 }
 
@@ -1969,7 +2010,7 @@ a {
 .routePage > .usagePanel,
 .routePage > .storagePanel,
 .routePage > .catalogPanel {
-  box-shadow: 0 18px 48px rgb(23 32 28 / 9%);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 42%);
 }
 
 .usagePanel,
@@ -2019,7 +2060,7 @@ a {
 .deviceDirectory > header > span {
   background: var(--soft-green);
   border-radius: 999px;
-  color: var(--green);
+  color: var(--soft-green-ink);
   font-size: 9px;
   font-weight: 800;
   padding: 7px 10px;
@@ -2103,7 +2144,7 @@ a {
   align-items: center;
   background: var(--soft-green);
   border-radius: 999px;
-  color: var(--green);
+  color: var(--soft-green-ink);
   display: flex;
   font-size: 8px;
   font-weight: 800;
@@ -2121,12 +2162,12 @@ a {
 }
 
 .offlinePill {
-  background: #ecece6;
+  background: #232b27;
   color: var(--muted);
 }
 
 .offlinePill i {
-  background: #9aa099;
+  background: #6f7a72;
 }
 
 .deviceGrid dl {
