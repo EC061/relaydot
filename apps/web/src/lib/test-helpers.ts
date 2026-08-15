@@ -3,6 +3,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { Store } from "./store";
+import type { WorkerOptions } from "./worker";
+
+/**
+ * Worker settings for tests: no secret key so ingest resolves to "not
+ * configured", and a path that does not exist so no catalog schedule registers.
+ */
+export function testWorkerOptions(
+  overrides: Partial<WorkerOptions> = {}
+): WorkerOptions {
+  return {
+    secretKey: null,
+    catalogSourcesPath: join(tmpdir(), "relaydot-absent-catalog.yaml"),
+    ingestSchedule: "@every 1h",
+    ...overrides
+  };
+}
 
 export function temporaryStore(): {
   store: Store;

@@ -33,11 +33,15 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 ENV RELAYDOT_DATABASE_PATH=/app/data/relaydot.db
+ENV RELAYDOT_CATALOG_SOURCES=/app/config/catalog-sources.yaml
 
 WORKDIR /app
 
 COPY --from=builder --chown=node:node /workspace/apps/web/.next/standalone ./
 COPY --from=builder --chown=node:node /workspace/apps/web/.next/static ./apps/web/.next/static
+# Read at runtime by the catalog refresh, and mountable so an operator can
+# adjust the declared sources without rebuilding the image.
+COPY --from=builder --chown=node:node /workspace/config ./config
 
 RUN mkdir -p /app/data && chown node:node /app/data
 

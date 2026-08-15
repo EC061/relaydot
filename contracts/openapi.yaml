@@ -23,11 +23,73 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Error"}
+  /admin/session:
+    post:
+      summary: Exchange the administrator token for a browser session
+      operationId: createAdminSession
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: {type: string, minLength: 1}
+      responses:
+        "200":
+          description: Session established and set as an HttpOnly cookie
+          headers:
+            Set-Cookie:
+              schema: {type: string}
+              description: relaydot_session cookie, HttpOnly and SameSite=Lax
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  expires_at: {type: integer}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403":
+          description: Request origin does not match the controller
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "422":
+          description: Malformed request body
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+        "429":
+          description: Too many sign-in attempts from this client
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+    delete:
+      summary: Revoke the current browser session
+      operationId: deleteAdminSession
+      security: [{adminSession: []}]
+      responses:
+        "200":
+          description: Session revoked and the cookie cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: {type: string}
+        "403":
+          description: Request origin does not match the controller
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
   /admin/enrollment-tokens:
     post:
       summary: Create a single-use enrollment token
       operationId: createEnrollmentToken
-      security: [{adminToken: []}]
+      security: [{adminToken: []}, {adminSession: []}]
       requestBody:
         required: true
         content:
@@ -65,7 +127,7 @@ paths:
     get:
       summary: List enrolled devices
       operationId: listDevices
-      security: [{adminToken: []}]
+      security: [{adminToken: []}, {adminSession: []}]
       responses:
         "200":
           description: Enrolled devices
@@ -79,7 +141,7 @@ paths:
     post:
       summary: Queue a durable device command
       operationId: createDeviceCommand
-      security: [{adminToken: []}]
+      security: [{adminToken: []}, {adminSession: []}]
       parameters:
         - $ref: "#/components/parameters/DeviceId"
       requestBody:
@@ -167,6 +229,263 @@ paths:
               schema: {$ref: "#/components/schemas/Command"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "404": {$ref: "#/components/responses/NotFound"}
+  /admin/storage:
+    get:
+      summary: Read the shared WebDAV configuration
+      operationId: getStorageBackend
+      description: >-
+        Returns the configured backend without its password. The controller
+        never serves the stored credential back to a browser.
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: Current configuration, or configured=false when unset
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StorageBackend"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    put:
+      summary: Configure the shared WebDAV backend
+      operationId: saveStorageBackend
+      description: >-
+        Stores the password encrypted at rest and immediately verifies the
+        credential against the server.
+      security: [{adminToken: []}, {adminSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [base_url, username, password]
+              properties:
+                base_url: {type: string, format: uri}
+                username: {type: string, minLength: 1}
+                password: {type: string, minLength: 1, writeOnly: true}
+      responses:
+        "200":
+          description: Saved, with the outcome of the verification probe
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StorageProbe"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "422":
+          description: Malformed request body or unusable base URL
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+    delete:
+      summary: Remove the shared WebDAV backend
+      operationId: deleteStorageBackend
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: Backend removed
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StorageBackend"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /admin/storage/test:
+    post:
+      summary: Verify the stored WebDAV credential
+      operationId: testStorageBackend
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: Probe outcome, also recorded against the backend
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StorageProbe"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /devices/{deviceId}/storage:
+    get:
+      summary: Fetch the shared object-store credential for a device
+      operationId: getDeviceStorage
+      description: >-
+        Agents read and write WebDAV directly, so file content never traverses
+        the controller. This is the only route that returns the password, and
+        only to an authenticated enrolled device.
+      security: [{deviceBearer: []}]
+      parameters:
+        - $ref: "#/components/parameters/DeviceId"
+      responses:
+        "200":
+          description: Credential and the object and manifest prefixes
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/DeviceStorage"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409":
+          description: No storage backend is configured
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /admin/usage/ingest:
+    get:
+      summary: Read recent usage-ingest runs
+      operationId: getUsageIngestStatus
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: Whether storage is configured, plus the last five runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured: {type: boolean}
+                  runs:
+                    type: array
+                    items: {$ref: "#/components/schemas/IngestRun"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+    post:
+      summary: Read conversation history from the object store now
+      operationId: runUsageIngest
+      description: >-
+        Parses every history object whose digest has not been read yet and
+        writes the usage facts it yields. Runs on a schedule as well.
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: What the run read and wrote
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/IngestReport"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409":
+          description: No storage backend is configured
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /admin/catalog:
+    get:
+      summary: Read the model catalog and its declared sources
+      operationId: getCatalog
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: Declared sources, review queue, approved rates, and checks
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Catalog"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+  /admin/catalog/check:
+    post:
+      summary: Check the declared official sources for models
+      operationId: checkCatalog
+      description: >-
+        Discovers model identifiers only. Prices are never taken from a source
+        automatically; config/catalog-sources.yaml sets autoApply to false.
+      security: [{adminToken: []}, {adminSession: []}]
+      responses:
+        "200":
+          description: What the check discovered, with a note per provider
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/CatalogCheckReport"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "422":
+          description: The declared sources are missing or unreadable
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /admin/catalog/models/{modelId}:
+    patch:
+      summary: Move a model in or out of the price review queue
+      operationId: setCatalogModelStatus
+      security: [{adminToken: []}, {adminSession: []}]
+      parameters:
+        - $ref: "#/components/parameters/ModelId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status]
+              properties:
+                status: {type: string, enum: [needs_price, ignored]}
+      responses:
+        "200":
+          description: Updated status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_id: {type: string}
+                  status: {type: string}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "422":
+          description: Unsupported status
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /admin/prices:
+    put:
+      summary: Approve a reviewed rate for one model
+      operationId: savePrice
+      description: >-
+        Rates are given in dollars per million tokens as published. A source
+        URL is required, rates must be nonnegative, and a move larger than
+        spec.validation.blockOnRateChangePercent needs confirm=true. Omitted
+        cache rates default to the input rate rather than assuming a discount.
+      security: [{adminToken: []}, {adminSession: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PriceApproval"}
+      responses:
+        "200":
+          description: Rate approved and applied to stored usage facts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_id: {type: string}
+                  status: {type: string}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "409":
+          description: The rate moved further than the review threshold allows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string}
+                  requires_confirmation: {type: boolean}
+        "422":
+          description: Missing source locator or an unusable rate
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /admin/prices/{modelId}:
+    delete:
+      summary: Withdraw an approved rate
+      operationId: deletePrice
+      description: >-
+        Clears the stored cost of every fact for the model, which then reports
+        tokens without cost.
+      security: [{adminToken: []}, {adminSession: []}]
+      parameters:
+        - $ref: "#/components/parameters/ModelId"
+      responses:
+        "200":
+          description: Rate withdrawn
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_id: {type: string}
+                  status: {type: string}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
 components:
   securitySchemes:
     adminToken:
@@ -176,12 +495,25 @@ components:
     deviceBearer:
       type: http
       scheme: bearer
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: relaydot_session
+      description: >-
+        HttpOnly session cookie issued by POST /admin/session and accepted on
+        administrator routes in place of the header token. Cookie-authenticated
+        requests must also be same-origin; a foreign Origin returns 403.
   parameters:
     DeviceId:
       name: deviceId
       in: path
       required: true
       schema: {type: string, format: uuid}
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      schema: {type: string, minLength: 1}
   responses:
     Unauthorized:
       description: Missing or invalid credential
@@ -194,6 +526,172 @@ components:
         application/json:
           schema: {$ref: "#/components/schemas/Error"}
   schemas:
+    StorageBackend:
+      type: object
+      description: >-
+        The single shared WebDAV backend. The password is deliberately absent:
+        it is stored encrypted and only ever handed to an enrolled device.
+      required: [configured]
+      properties:
+        configured: {type: boolean}
+        kind: {type: string, enum: [webdav]}
+        base_url: {type: string, format: uri}
+        username: {type: string}
+        updated_at: {type: integer}
+        verified_at: {type: [integer, "null"]}
+        last_error: {type: [string, "null"]}
+    StorageProbe:
+      type: object
+      required: [ok]
+      properties:
+        configured: {type: boolean}
+        base_url: {type: string, format: uri}
+        ok: {type: boolean}
+        verified_at: {type: [integer, "null"]}
+        error: {type: [string, "null"]}
+    DeviceStorage:
+      type: object
+      required: [kind, base_url, username, password]
+      properties:
+        kind: {type: string, enum: [webdav]}
+        base_url: {type: string, format: uri}
+        username: {type: string}
+        password: {type: string, writeOnly: true}
+        objects_prefix:
+          type: string
+          description: Collection holding objects/<first two hex>/<sha256>.
+        manifests_prefix:
+          type: string
+          description: Collection holding manifests/<device id>.json.
+    IngestRun:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        started_at: {type: integer}
+        finished_at: {type: [integer, "null"]}
+        status: {type: string, enum: [ok, partial, failed, skipped]}
+        manifests: {type: integer}
+        objects_seen: {type: integer}
+        objects_read: {type: integer}
+        facts_written: {type: integer}
+        detail: {type: string}
+    IngestReport:
+      type: object
+      properties:
+        status: {type: string, enum: [ok, partial, failed, skipped]}
+        manifests: {type: integer}
+        objectsSeen: {type: integer}
+        objectsRead:
+          type: integer
+          description: >-
+            Objects actually fetched. Lower than objectsSeen when a digest was
+            already parsed, which is how ingest stays incremental.
+        factsWritten: {type: integer}
+        skippedLarge: {type: integer}
+        malformed: {type: integer}
+        errors:
+          type: array
+          items: {type: string}
+    CatalogModel:
+      type: object
+      properties:
+        model_id: {type: string}
+        provider: {type: string}
+        display_name: {type: string}
+        origin: {type: string, enum: [usage, official_source, operator]}
+        source_url: {type: string}
+        first_seen_at: {type: integer}
+        last_seen_at: {type: integer}
+        status: {type: string, enum: [needs_price, priced, ignored]}
+    ModelPrice:
+      type: object
+      description: Approved rates in microUSD per million tokens.
+      properties:
+        model_id: {type: string}
+        provider: {type: string}
+        display_name: {type: string}
+        input_uncached_microusd_per_mtok: {type: integer}
+        cache_write_5m_microusd_per_mtok: {type: integer}
+        cache_write_1h_microusd_per_mtok: {type: integer}
+        cache_write_other_microusd_per_mtok: {type: integer}
+        cache_read_microusd_per_mtok: {type: integer}
+        output_microusd_per_mtok: {type: integer}
+        updated_at: {type: integer}
+        source_url:
+          type: string
+          description: Where the rate was read from. Required for operator approvals.
+        approved_by: {type: string, enum: [seed, operator]}
+        effective_date: {type: string}
+    CatalogCheck:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        started_at: {type: integer}
+        finished_at: {type: [integer, "null"]}
+        status: {type: string, enum: [ok, partial, failed]}
+        discovered: {type: integer}
+        added: {type: integer}
+        detail: {type: string}
+    Catalog:
+      type: object
+      properties:
+        sources:
+          type: [object, "null"]
+          properties:
+            schedule:
+              type: object
+              properties:
+                enabled: {type: boolean}
+                cron: {type: string}
+                timezone: {type: string, enum: [UTC]}
+            auto_apply: {type: boolean}
+            providers:
+              type: array
+              items:
+                type: object
+                properties:
+                  key: {type: string}
+                  provider: {type: string}
+                  model_api_enabled: {type: boolean}
+                  model_documents: {type: array, items: {type: string}}
+                  pricing_documents: {type: array, items: {type: string}}
+        sources_error: {type: [string, "null"]}
+        models: {type: array, items: {$ref: "#/components/schemas/CatalogModel"}}
+        prices: {type: array, items: {$ref: "#/components/schemas/ModelPrice"}}
+        checks: {type: array, items: {$ref: "#/components/schemas/CatalogCheck"}}
+    CatalogCheckReport:
+      type: object
+      properties:
+        status: {type: string, enum: [ok, partial, failed]}
+        discovered: {type: integer}
+        added: {type: integer}
+        notes:
+          type: array
+          items: {type: string}
+          description: One line per declared provider explaining what happened.
+    PriceApproval:
+      type: object
+      additionalProperties: false
+      required: [model_id, provider, source_url, input_usd_per_mtok, output_usd_per_mtok]
+      properties:
+        model_id: {type: string, minLength: 1}
+        provider: {type: string, enum: [claude, openai]}
+        display_name: {type: string}
+        input_usd_per_mtok: {type: number, minimum: 0}
+        output_usd_per_mtok: {type: number, minimum: 0}
+        cache_read_usd_per_mtok: {type: number, minimum: 0}
+        cache_write_5m_usd_per_mtok: {type: number, minimum: 0}
+        cache_write_1h_usd_per_mtok: {type: number, minimum: 0}
+        source_url:
+          type: string
+          format: uri
+          description: HTTPS page the rate was read from. Recorded with the rate.
+        effective_date: {type: string}
+        confirm:
+          type: boolean
+          description: >-
+            Required when the rate moves further than the configured review
+            threshold.
     Error:
       type: object
       additionalProperties: false
