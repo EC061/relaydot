@@ -1,6 +1,16 @@
 import { getController } from "@/lib/context";
+import { RANGES, summarizeUsage } from "@/lib/analytics";
+import { loadCatalogSources } from "@/lib/catalog";
+import { catalogSourcesPath } from "@/lib/config";
+import { requireAdminSession } from "@/lib/session";
+import type { RangeKey } from "@/lib/analytics";
 
+import { CatalogPanel } from "./catalog-panel";
 import { EnrollmentPanel } from "./enrollment-panel";
+import { SectionNav } from "./section-nav";
+import { SignOutButton } from "./sign-out-button";
+import { StoragePanel } from "./storage-panel";
+import { UsagePanel } from "./usage-panel";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,14 +23,36 @@ function relativeTime(timestamp: number): string {
   return `${Math.floor(seconds / 86_400)}d ago`;
 }
 
-export default function Dashboard() {
+export default async function Dashboard({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  await requireAdminSession();
+  const requested = (await searchParams).range;
+  const range: RangeKey =
+    RANGES.find((entry) => entry.key === requested)?.key ?? "24h";
   const { store } = getController();
   const health = store.health();
   const devices = store.listDevices();
   const events = store.listAuditEvents().slice(-6).reverse();
+  const usage = summarizeUsage(store, range, Math.floor(Date.now() / 1000));
   const online = devices.filter(
     (device) => Math.floor(Date.now() / 1000) - device.last_seen_at < 120
   ).length;
+
+  // Rendered server-side so the panels paint with real state on first load; the
+  // password is never part of this, only the base URL and username.
+  const backend = store.storageBackend();
+  const storage = {
+    configured: backend !== null,
+    base_url: backend?.base_url ?? "",
+    username: backend?.username ?? "",
+    updated_at: backend?.updated_at ?? null,
+    verified_at: backend?.verified_at ?? null,
+    last_error: backend?.last_error ?? null
+  };
+  const catalog = loadCatalogSources(catalogSourcesPath());
 
   return (
     <main>
@@ -33,26 +65,19 @@ export default function Dashboard() {
           </span>
           <span>relaydot</span>
         </a>
-        <div className="systemBadge">
-          <span className="pulse" />
-          Controller healthy
+        <div className="topbarActions">
+          <div className="systemBadge">
+            <span className="pulse" />
+            Controller healthy
+          </div>
+          <SignOutButton />
         </div>
       </header>
 
       <div className="shell">
         <aside>
           <p className="eyebrow">Workspace</p>
-          <nav aria-label="Primary navigation">
-            <a className="active" href="#overview">
-              <span>01</span> Overview
-            </a>
-            <a href="#devices">
-              <span>02</span> Devices
-            </a>
-            <a href="#activity">
-              <span>03</span> Activity
-            </a>
-          </nav>
+          <SectionNav />
           <div className="storageCard">
             <p>Storage engine</p>
             <strong>SQLite · WAL</strong>
@@ -92,6 +117,32 @@ export default function Dashboard() {
           </div>
 
           <EnrollmentPanel />
+
+          <UsagePanel summary={usage} />
+
+          <StoragePanel initial={storage} runs={store.ingestRuns(5)} />
+
+          <CatalogPanel
+            checks={store.catalogChecks(5)}
+            models={store.catalogModels()}
+            prices={store.modelPrices()}
+            sources={
+              catalog.sources === null
+                ? null
+                : {
+                    schedule: catalog.sources.schedule,
+                    auto_apply: catalog.sources.autoApply,
+                    providers: catalog.sources.providers.map((provider) => ({
+                      key: provider.key,
+                      provider: provider.provider,
+                      model_api_enabled: provider.modelApi?.enabled ?? false,
+                      model_documents: provider.modelDocuments,
+                      pricing_documents: provider.pricingDocuments
+                    }))
+                  }
+            }
+            sourcesError={catalog.error}
+          />
 
           <section className="panel" id="devices">
             <div className="panelHeading">

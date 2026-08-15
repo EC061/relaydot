@@ -1,3 +1,4 @@
+import { catalogSourcesPath, ingestSchedule, secretKey } from "./config";
 import { Store } from "./store";
 import { InProcessWorker } from "./worker";
 
@@ -17,7 +18,11 @@ export function getController(): ControllerContext {
     );
     globalController.relaydotController = {
       store,
-      worker: new InProcessWorker(store)
+      worker: new InProcessWorker(store, {
+        secretKey: secretKey(),
+        catalogSourcesPath: catalogSourcesPath(),
+        ingestSchedule: ingestSchedule()
+      })
     };
   }
   return globalController.relaydotController;

@@ -17,6 +17,18 @@ html {
   scroll-behavior: smooth;
 }
 
+/* The top bar is sticky at 72px, so anchor targets need matching clearance or
+   a jump leaves the section heading hidden underneath it. */
+:target,
+#overview,
+#storage,
+#catalog,
+#devices,
+#activity {
+  scroll-margin-top: 88px;
+}
+
+
 body {
   margin: 0;
   background:
@@ -91,6 +103,85 @@ a {
   font-weight: 700;
   gap: 8px;
   padding: 9px 13px;
+}
+
+.topbarActions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.signOut {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px 15px;
+}
+
+.signOut:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.signOut:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.loginShell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.loginCard {
+  background: var(--ink);
+  border-radius: 13px;
+  color: white;
+  max-width: 430px;
+  padding: 34px;
+  width: 100%;
+}
+
+.loginCard .eyebrow {
+  color: var(--lime);
+  margin-bottom: 8px;
+}
+
+.loginCard h1 {
+  font-size: 27px;
+  letter-spacing: -0.04em;
+  margin: 0 0 10px;
+}
+
+.loginCard .lede {
+  color: #b7bcb0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 22px;
+}
+
+.loginCard .brandMark {
+  margin-bottom: 22px;
+}
+
+.loginCard .brandMark i {
+  background: var(--lime);
+}
+
+.loginCard label {
+  color: #b7bcb0;
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 7px;
 }
 
 .pulse {
@@ -602,5 +693,619 @@ h2 {
 
   .lastSeen {
     display: none;
+  }
+}
+
+/* ---------------------------------------------------------- usage analytics */
+
+.usagePanel {
+  background: var(--ink);
+  border-radius: 13px;
+  color: white;
+  margin-top: 14px;
+  padding: 28px;
+  scroll-margin-top: 88px;
+}
+
+.usageTop {
+  align-items: end;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.usageTop .eyebrow {
+  color: var(--lime);
+  margin-bottom: 6px;
+}
+
+.usageTop h2 {
+  margin: 0;
+}
+
+.rangeTabs {
+  display: flex;
+  gap: 2px;
+  background: #232720;
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.rangeTabs a {
+  border-radius: 999px;
+  color: #b7bcb0;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 13px;
+}
+
+.rangeTabs a:hover {
+  color: white;
+}
+
+.rangeTabs a.active {
+  background: #3a3f36;
+  color: white;
+}
+
+.usageGrid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: minmax(230px, 0.62fr) minmax(340px, 1.38fr);
+}
+
+.tileLabel {
+  color: #b7bcb0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.costHero {
+  display: block;
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.costHeroNote {
+  color: #8c9285;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 12px;
+  margin: 9px 0 26px;
+}
+
+.providerList {
+  display: grid;
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.providerHead {
+  align-items: center;
+  display: flex;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.swatch {
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+  height: 10px;
+  width: 10px;
+}
+
+.providerName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.providerCost {
+  font-size: 15px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.shareTrack {
+  background: #2c312a;
+  border-radius: 999px;
+  display: flex;
+  height: 4px;
+  overflow: hidden;
+}
+
+.shareTrack span {
+  border-radius: 999px;
+}
+
+.providerNote {
+  color: #8c9285;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.chartFigure {
+  margin: 0;
+  min-width: 0;
+}
+
+.chartFigure figcaption {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.chartControls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.segmented {
+  background: #232720;
+  border-radius: 7px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+}
+
+.segmented button {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: #b7bcb0;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  padding: 5px 9px;
+  text-transform: uppercase;
+}
+
+.segmented button.on {
+  background: #3a3f36;
+  color: white;
+}
+
+.legend {
+  color: #b7bcb0;
+  display: flex;
+  font-size: 12px;
+  gap: 14px;
+}
+
+.legend > span {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.chartFigure svg {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.gridline {
+  stroke: #2c312a;
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: #8c9285;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+}
+
+.crosshair {
+  stroke: #6c7266;
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.tooltip {
+  align-items: center;
+  color: #b7bcb0;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 6px 16px;
+  margin-top: 10px;
+  min-height: 18px;
+}
+
+.tooltip strong {
+  color: white;
+}
+
+.tooltip > span {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.tooltip b {
+  color: white;
+}
+
+.chartHint {
+  color: #6c7266;
+  font-size: 12px;
+  margin: 10px 0 0;
+  min-height: 18px;
+}
+
+.tileRow {
+  border-top: 1px solid #2c312a;
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 28px;
+}
+
+.tileRow article {
+  border-right: 1px solid #2c312a;
+  padding: 20px 20px 4px 0;
+}
+
+.tileRow article:last-child {
+  border-right: 0;
+}
+
+.tileRow article:not(:first-child) {
+  padding-left: 20px;
+}
+
+.tileRow strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.tileRow span {
+  color: #8c9285;
+  display: block;
+  font-size: 12px;
+  margin-top: 7px;
+}
+
+.breakdown {
+  border-top: 1px solid #2c312a;
+  margin-top: 24px;
+  padding-top: 22px;
+}
+
+.breakdownHead {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.breakdown table {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: 100%;
+}
+
+.breakdown th,
+.breakdown td {
+  padding: 12px 8px;
+  text-align: left;
+}
+
+.breakdown thead th {
+  border-bottom: 1px solid #2c312a;
+  color: #8c9285;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.breakdown tbody th {
+  align-items: center;
+  display: flex;
+  font-weight: 600;
+  gap: 9px;
+}
+
+.breakdown tbody tr:not(:last-child) th,
+.breakdown tbody tr:not(:last-child) td {
+  border-bottom: 1px solid #232720;
+}
+
+.breakdown .num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.breakdown .unpriced {
+  background: #2c312a;
+  border-radius: 4px;
+  color: #b7bcb0;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+
+.breakdown .quiet {
+  color: #8c9285;
+  font-size: 12px;
+  margin: 14px 0 0;
+}
+
+@media (max-width: 1080px) {
+  .usageGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tileRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tileRow article {
+    border-bottom: 1px solid #2c312a;
+  }
+}
+
+/* ------------------------------------------------- storage and catalog */
+
+.storagePanel,
+.catalogPanel {
+  background: var(--ink);
+  border-radius: 13px;
+  color: white;
+  margin-top: 14px;
+  padding: 28px;
+  scroll-margin-top: 88px;
+}
+
+.storagePanel {
+  align-items: start;
+  display: grid;
+  gap: 36px;
+  grid-template-columns: minmax(230px, 0.9fr) minmax(340px, 1.1fr);
+}
+
+.storagePanel .eyebrow,
+.catalogPanel .eyebrow {
+  color: var(--lime);
+  margin-bottom: 8px;
+}
+
+.storagePanel h2,
+.catalogPanel h2 {
+  margin: 0 0 10px;
+}
+
+.storagePanel > div > p {
+  color: #b7bcb0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.storagePanel code {
+  background: #292d25;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 1px 5px;
+}
+
+.storageFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin: 18px 0 0;
+}
+
+.storageFacts dt {
+  color: #8c9285;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.storageFacts dd {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.storageDetail {
+  color: #8c9285;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 12px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.storagePanel label {
+  color: #b7bcb0;
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  margin: 14px 0 7px;
+}
+
+.storagePanel label:first-child {
+  margin-top: 0;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.buttonRow button,
+.catalogTop button {
+  background: var(--lime);
+  border: 0;
+  border-radius: 7px;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 11px 15px;
+}
+
+.buttonRow button.ghost,
+.catalogPanel button.ghost {
+  background: transparent;
+  border: 1px solid #464b41;
+  color: #d7dad2;
+}
+
+.buttonRow button.ghost:hover:not(:disabled),
+.catalogPanel button.ghost:hover:not(:disabled) {
+  border-color: #6d7466;
+  color: white;
+}
+
+.buttonRow button.danger,
+.catalogPanel button.danger {
+  color: #ff9674;
+}
+
+.catalogPanel button.small {
+  font-size: 10px;
+  margin-left: 6px;
+  padding: 6px 10px;
+}
+
+.buttonRow button:disabled,
+.catalogPanel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.formNotice {
+  color: var(--lime);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+
+.catalogTop {
+  align-items: start;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.catalogLede {
+  color: #b7bcb0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.catalogPanel .breakdown table a {
+  color: var(--lime);
+  text-decoration: underline;
+}
+
+.catalogPanel .quiet {
+  color: #8c9285;
+  font-size: 12px;
+  margin: 14px 0 0;
+}
+
+.linkButton {
+  background: none;
+  border: 0;
+  color: var(--lime);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.priceForm {
+  border: 1px solid #2c312a;
+  border-radius: 10px;
+  margin-top: 18px;
+  padding: 20px;
+}
+
+.priceHint {
+  color: #8c9285;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 6px 0 0;
+  max-width: 62ch;
+}
+
+.priceGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-top: 14px;
+}
+
+.priceGrid label {
+  display: block;
+}
+
+.priceGrid span {
+  color: #b7bcb0;
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.priceGrid input,
+.storagePanel .inputRow input {
+  background: #292d25;
+  border: 1px solid #464b41;
+  border-radius: 7px;
+  color: white;
+  font: 12px monospace;
+  outline: none;
+  padding: 11px;
+  width: 100%;
+}
+
+.priceGrid input:focus,
+.storagePanel .inputRow input:focus {
+  border-color: var(--lime);
+}
+
+@media (max-width: 1080px) {
+  .storagePanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalogTop {
+    flex-direction: column;
   }
 }

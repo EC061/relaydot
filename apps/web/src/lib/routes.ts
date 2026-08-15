@@ -1,9 +1,22 @@
 import { ControllerApi } from "./api";
+import {
+  adminToken,
+  catalogSourcesPath,
+  ingestSchedule,
+  publicUrl,
+  secretKey
+} from "./config";
 import { getController } from "./context";
+
+export { adminToken, catalogSourcesPath, ingestSchedule, publicUrl, secretKey };
 
 export function api(): ControllerApi {
   return new ControllerApi(
     getController().store,
-    process.env.RELAYDOT_ADMIN_TOKEN ?? "relaydot-development-only"
+    adminToken(),
+    publicUrl(),
+    secretKey(),
+    fetch,
+    catalogSourcesPath()
   );
 }

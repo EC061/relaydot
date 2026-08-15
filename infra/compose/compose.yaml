@@ -6,6 +6,22 @@ services:
     environment:
       RELAYDOT_ADMIN_TOKEN: ${RELAYDOT_ADMIN_TOKEN:?set RELAYDOT_ADMIN_TOKEN}
       RELAYDOT_DATABASE_PATH: /app/data/relaydot.db
+      # Public URL browsers use to reach this controller. Pins session cookie
+      # flags and origin checks to a trusted value instead of the Host header.
+      RELAYDOT_PUBLIC_URL: ${RELAYDOT_PUBLIC_URL:?set RELAYDOT_PUBLIC_URL}
+      # Encrypts the stored WebDAV password. Setting it explicitly lets the
+      # administrator token rotate without re-entering that password.
+      RELAYDOT_SECRET_KEY: ${RELAYDOT_SECRET_KEY:-}
+      # How often the controller re-reads the shared object store for new
+      # conversation history. Cron or Honker's `@every <n><unit>` form.
+      RELAYDOT_INGEST_SCHEDULE: ${RELAYDOT_INGEST_SCHEDULE:-@every 5m}
+      # Declared official sources for the model and price catalog. Bind-mount
+      # over this path to change the allowlist or schedule without a rebuild.
+      RELAYDOT_CATALOG_SOURCES: /app/config/catalog-sources.yaml
+      # Optional. Only needed for the scheduled model-discovery check; the
+      # catalog works without them and prices are never applied automatically.
+      RELAYDOT_SECRETS_OPENAI_API_KEY: ${RELAYDOT_SECRETS_OPENAI_API_KEY:-}
+      RELAYDOT_SECRETS_ANTHROPIC_API_KEY: ${RELAYDOT_SECRETS_ANTHROPIC_API_KEY:-}
     ports:
       - "${RELAYDOT_BIND_ADDRESS:-127.0.0.1}:${RELAYDOT_PORT:-3000}:3000"
     init: true

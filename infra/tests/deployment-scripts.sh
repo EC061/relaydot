@@ -10,6 +10,7 @@ mkdir -p "$fixture/bin" "$fixture/deploy"
 cp "$repository_root/infra/compose/compose.yaml" "$fixture/deploy/compose.yaml"
 cat >"$fixture/deploy/.env" <<'EOF'
 RELAYDOT_ADMIN_TOKEN=test-token
+RELAYDOT_PUBLIC_URL=https://relaydot.test
 RELAYDOT_BIND_ADDRESS=127.0.0.1
 RELAYDOT_PORT=3000
 RELAYDOT_IMAGE=ghcr.io/ec061/relaydot-controller:sha-old000
