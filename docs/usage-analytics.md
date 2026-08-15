@@ -1,8 +1,11 @@
 # Usage analytics and cost accounting
 
-Status: design specification. The agent contains tested usage-normalization
-primitives, but controller ingestion, rollups, and dashboard reporting described
-below are not yet implemented.
+Status: partly implemented. The controller reads conversation history from the
+shared WebDAV object store, parses it into usage facts, prices them against the
+reviewed catalog, and renders the Usage panel described below. The remaining
+design items are marked in-place: per-device attribution beyond the publishing
+device, signed endpoint-submitted facts, and end-to-end encryption of the stored
+conversation objects.
 
 ## Product promise
 

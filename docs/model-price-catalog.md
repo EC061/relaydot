@@ -1,8 +1,12 @@
 # Model and price catalog refresh
 
-Status: design specification. The current controller does not yet implement this
-page, refresh API, scheduler, or catalog tables. These requirements are retained
-here for the corresponding implementation milestone.
+Status: partly implemented. The controller has the catalog tables, the scheduled
+official-source check, a **Check for updates** action, and operator rate approval
+with the source locator and change-threshold rules enforced. What a check
+discovers is model *identifiers*: rates are published as prose on documentation
+pages, so relaydot records the page to read and requires a human to approve the
+figure, which is what `spec.autoApply: false` asks for. The staged-candidate diff
+review and immutable approved versions below remain design.
 
 ## Product behavior
 
