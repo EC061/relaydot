@@ -19,3 +19,7 @@ class BundleError(RelaydotError):
 
 class ApplyError(RelaydotError):
     """A staged revision could not be applied atomically."""
+
+
+class StorageError(RelaydotError):
+    """The shared WebDAV object store rejected or could not serve a request."""

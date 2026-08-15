@@ -17,6 +17,7 @@ from .errors import RelaydotError
 from .manifest import build_manifest
 from .policy import load_policy
 from .service import ServiceInstaller
+from .sync import SyncState, default_state_path, diff_against_state
 
 app = typer.Typer(help="Relaydot endpoint synchronization agent", no_args_is_help=True)
 config_app = typer.Typer(help="Validate and inspect local policy")
@@ -124,7 +125,9 @@ def _run_service_once(state: Path, policy: Path, home: Path | None) -> list[dict
     credentials = StateStore(state).load()
     client = ControllerClient(credentials.server)
     try:
-        service = AgentService(credentials, client, policy, home)
+        service = AgentService(
+            credentials, client, policy, home, sync_state=default_state_path(state)
+        )
         return service.run_once()
     finally:
         client.close()
@@ -141,6 +144,47 @@ def sync_now(
     typer.echo(json.dumps(_run_service_once(state, policy, home), sort_keys=True))
 
 
+@sync_app.command("status")
+def sync_status(
+    state: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_STATE,
+    policy: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_POLICY,
+    home: Annotated[Path | None, typer.Option(file_okay=False)] = None,
+) -> None:
+    """Report the local inventory and what this node last exchanged with peers."""
+
+    parsed = load_policy(policy, home=home)
+    manifest = build_manifest(parsed)
+    sync_state = SyncState.load(default_state_path(state))
+    typer.echo(
+        json.dumps(
+            {
+                "digest": manifest.digest,
+                "files": len(manifest.entries),
+                "bytes": sum(entry.size for entry in manifest.entries),
+                "known_objects": len(sync_state.uploaded),
+                "applied_paths": len(sync_state.applied),
+                "peers": sync_state.peers,
+                "state_path": str(sync_state.path),
+            },
+            sort_keys=True,
+        )
+    )
+
+
+@sync_app.command("diff")
+def sync_diff(
+    state: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_STATE,
+    policy: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_POLICY,
+    home: Annotated[Path | None, typer.Option(file_okay=False)] = None,
+) -> None:
+    """Show which local paths differ from what this node last applied."""
+
+    parsed = load_policy(policy, home=home)
+    manifest = build_manifest(parsed)
+    sync_state = SyncState.load(default_state_path(state))
+    typer.echo(json.dumps(diff_against_state(manifest, sync_state).as_dict(), sort_keys=True))
+
+
 @service_app.command("run")
 def service_run(
     state: Annotated[Path, typer.Option(exists=True, dir_okay=False)] = DEFAULT_STATE,
@@ -153,7 +197,7 @@ def service_run(
 
     credentials = StateStore(state).load()
     client = ControllerClient(credentials.server)
-    service = AgentService(credentials, client, policy, home)
+    service = AgentService(credentials, client, policy, home, sync_state=default_state_path(state))
     try:
         if once:
             outcomes = service.run_once()

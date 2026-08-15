@@ -6,6 +6,7 @@ import json
 import platform
 import socket
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -14,7 +15,9 @@ import httpx
 
 from . import __version__
 from .manifest import build_manifest
-from .policy import load_policy
+from .policy import SyncPolicy, load_policy
+from .sync import SyncState, run_sync
+from .webdav import WebdavClient
 
 
 @dataclass(frozen=True)
@@ -86,6 +89,22 @@ class ControllerClient:
         response.raise_for_status()
         return dict(response.json())
 
+    def storage(self, credentials: AgentCredentials) -> dict[str, Any] | None:
+        """Fetch the shared WebDAV credential, or None when none is configured.
+
+        The controller hands this to enrolled devices so file bytes travel
+        agent -> WebDAV -> agent without passing through the control plane.
+        """
+
+        response = self.client.get(
+            f"{self.server}/api/v1/devices/{credentials.device_id}/storage",
+            headers=self._headers(credentials),
+        )
+        if response.status_code == 409:
+            return None
+        response.raise_for_status()
+        return dict(response.json())
+
     def claim(self, credentials: AgentCredentials, limit: int = 10) -> list[dict[str, Any]]:
         response = self.client.post(
             f"{self.server}/api/v1/devices/{credentials.device_id}/commands/claim",
@@ -123,11 +142,15 @@ class AgentService:
         client: ControllerClient,
         policy: Path,
         home: Path | None = None,
+        sync_state: Path | None = None,
+        webdav_factory: Callable[[dict[str, Any]], WebdavClient] = WebdavClient.from_config,
     ) -> None:
         self.credentials = credentials
         self.client = client
         self.policy = policy
         self.home = home
+        self.sync_state = sync_state or Path("~/.relaydot/sync-state.json")
+        self.webdav_factory = webdav_factory
 
     def run_once(self) -> list[dict[str, Any]]:
         self.client.heartbeat(self.credentials)
@@ -159,12 +182,7 @@ class AgentService:
             policy = load_policy(self.policy, home=self.home)
             if command_type == "reload_policy":
                 return {"policy": policy.name, "roots": len(policy.roots)}
-            manifest = build_manifest(policy)
-            return {
-                "digest": manifest.digest,
-                "files": len(manifest.entries),
-                "bytes": sum(entry.size for entry in manifest.entries),
-            }
+            return self._sync(policy)
         if command_type == "collect_diagnostics":
             return {
                 "agent_version": __version__,
@@ -175,3 +193,32 @@ class AgentService:
         if command_type == "update_agent":
             raise RuntimeError("remote package updates are not enabled in this agent build")
         raise RuntimeError(f"unsupported command type: {command_type}")
+
+    def _sync(self, policy: SyncPolicy) -> dict[str, Any]:
+        """Inventory locally, then exchange content through shared WebDAV.
+
+        With no backend configured the command still succeeds and reports the
+        local inventory: a fleet that has not been given storage yet should show
+        that plainly rather than failing every scheduled sync.
+        """
+
+        manifest = build_manifest(policy)
+        summary = {
+            "digest": manifest.digest,
+            "files": len(manifest.entries),
+            "bytes": sum(entry.size for entry in manifest.entries),
+        }
+        storage = self.client.storage(self.credentials)
+        if storage is None:
+            return {**summary, "storage": "unconfigured"}
+        state = SyncState.load(self.sync_state)
+        with self.webdav_factory(storage) as dav:
+            report = run_sync(
+                dav,
+                policy,
+                manifest,
+                state,
+                device_id=self.credentials.device_id,
+                device_name=self.credentials.name,
+            )
+        return {**report.as_dict(), "storage": "webdav"}

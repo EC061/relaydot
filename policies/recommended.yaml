@@ -1,14 +1,15 @@
 apiVersion: relaydot.dev/v1alpha1
 kind: SyncPolicy
 metadata:
-  name: full-mirror-retain-forever
+  name: curated-subset
   annotations:
     relaydot.dev/mode: current-user-choice
     relaydot.dev/note: >-
-      Current policy: keep every regular file on every trusted machine, propagate
-      additions and changes, never propagate permanent deletion, and retain all
-      encrypted revisions forever. This intentionally includes credentials and
-      application state and can be narrowed later.
+      Current policy: synchronize only the curated configuration and history
+      directories listed below. Credentials, logs, caches, todos, and other
+      local state are ignored and never leave the machine. Ignore rules use
+      Syncthing semantics: the first matching rule wins, so the negations above
+      the trailing "*" are the complete allow list.
 spec:
   enforcedApplicationSettings:
     claude:
@@ -31,28 +32,31 @@ spec:
     encryptionRequired: end-to-end
     maxFileSize: unlimited
   roots:
-    - name: claude-full
+    - name: claude
       path: ~/.claude
-      classification: full-application-state
+      classification: curated-configuration-and-history
       syncMode: hybrid-full-mirror
       include:
         - /**
-    - name: claude-global-state
-      path: "~"
-      classification: full-application-state
-      syncMode: atomic-file
-      include:
-        - /.claude.json
-    - name: codex-full
+      ignore:
+        # keep only the directories listed here
+        - "!/settings.json"
+        - "!/commands"
+        - "!/skills"
+        - "!/plugins"
+        - "!/projects"
+        # ignore everything else (credentials, logs, caches, todos, etc.)
+        - "*"
+    - name: codex
       path: ~/.codex
-      classification: full-application-state
-      syncMode: hybrid-full-mirror
-      include:
-        - /**
-    - name: agents-full
-      path: ~/.agents
       optional: true
-      classification: full-application-state
+      classification: curated-configuration-and-history
       syncMode: hybrid-full-mirror
       include:
         - /**
+      ignore:
+        # Codex equivalents of settings.json, commands, and projects
+        - "!/config.toml"
+        - "!/prompts"
+        - "!/sessions"
+        - "*"
